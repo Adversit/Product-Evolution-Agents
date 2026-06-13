@@ -209,7 +209,7 @@ def test_engineering_acceptance_live():
     agent = EngineeringAgent()
     out = agent.run(
         solution=_solution(), repo_map=repo_map, core_modules=CORE,
-        gate=GateStatus.PASS, model="glm-4.7-flash",
+        gate=GateStatus.PASS, model="glm-4.5-air",
     )
     assert out.execution.blocked is False
     assert len(out.impact.items) >= 4

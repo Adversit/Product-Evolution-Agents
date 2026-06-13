@@ -32,7 +32,7 @@ Product-Evolution-Agents/
 ```bash
 ZHIPUAI_API_KEY=your-key-here
 GITHUB_TOKEN=          # 可选，提升 GitHub API 限流
-EVOPM_MODEL=glm-5.1    # 开发期可设 glm-4.7-flash
+EVOPM_MODEL=glm-5.1    # 开发期可设 glm-4.5-air
 ```
 
 `.gitignore` 必含：`.env`、`runs/`、`__pycache__/`、`*.pyc`、`.cache/`。
@@ -572,7 +572,7 @@ def risk_tier(item: CodeImpactItem, core_modules: list[str]) -> RiskTier:
 
 ```python
 def get_chat(model: str | None = None, temperature: float = 0.1) -> ChatOpenAI:
-    # base_url="https://open.bigmodel.cn/api/paas/v4/", api_key=env ZHIPUAI_API_KEY
+    # base_url="https://open.bigmodel.cn/api/coding/paas/v4/", api_key=env ZHIPUAI_API_KEY
     # model 默认 env EVOPM_MODEL（glm-5.1）；temperature 必须 ∈ (0,1)，禁止 0
 
 def structured_call(schema: type[BaseModel], system: str, user: str,
@@ -665,7 +665,7 @@ def fetch_issues(repo: str, keywords: list[str], limit: int = 10) -> list[dict]:
 
 ```text
 evopm init                      # 交互式问答生成 data/<name>/product.yaml（M0 增强）
-evopm run [--mock] [--replay] [--model glm-4.7-flash] [--data data/demo_kb]
+evopm run [--mock] [--replay] [--model glm-4.5-air] [--data data/demo_kb]
   # --mock：跳过 GitHub API 和 web_search，全用本地材料
   # --replay：LLM 全走缓存（离线演示）
 evopm  # 无参 = run --data data/demo_kb

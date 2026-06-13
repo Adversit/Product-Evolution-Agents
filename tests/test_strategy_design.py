@@ -115,7 +115,7 @@ def test_design_live():
     cf, tf = make_findings()
     valid_ids = {"sig-001", "sig-002", "sig-003", "cf-01", "tf-01", "req-01"}
     solution, _ = StrategyAgent().design(
-        focus, _opportunity(), cf, tf, valid_ids=valid_ids, model="glm-4.7-flash"
+        focus, _opportunity(), cf, tf, valid_ids=valid_ids, model="glm-4.5-air"
     )
     assert set(solution.role_notes) == {"product", "dev", "qa", "support"}
     assert all(v.strip() for v in solution.role_notes.values())

@@ -166,7 +166,7 @@ def test_score_live():
     pc = make_product_context()
     valid_ids = {"sig-001", "cf-01", "tf-01", "req-01", "clu-01", "clu-02", "clu-03"}
     decision, roadmap, _ = StrategyAgent().score(
-        focus, clusters, pc, cf, tf, valid_ids=valid_ids, model="glm-4.7-flash"
+        focus, clusters, pc, cf, tf, valid_ids=valid_ids, model="glm-4.5-air"
     )
     assert {s.dimension for s in decision.scores} == set(OPPORTUNITY_DIMS)
     assert {e.cluster_id for e in roadmap} == {"clu-01", "clu-02", "clu-03"}

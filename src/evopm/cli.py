@@ -68,7 +68,7 @@ def run(
         False, "--replay", help="LLM 全走缓存（离线演示）；interrupt 自动应答。"
     ),
     model: Optional[str] = typer.Option(
-        None, "--model", help="覆盖模型，如 glm-4.7-flash。"
+        None, "--model", help="覆盖模型，如 glm-4.5-air。"
     ),
     data: str = typer.Option(
         "data/demo_kb", "--data", help="产品上下文数据目录。"

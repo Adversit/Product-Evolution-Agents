@@ -18,7 +18,7 @@ EvoPM Agent 是一个基于 LangGraph 的多智能体产品需求决策系统（
 
 > 这是 Demo，不是产品级系统。设计取向：演示路径可靠 > 工程完备。不做鉴权、多租户、计费、生产写操作。详见 `CLAUDE.md` 与 `docs/`。
 
-技术栈：Python ≥ 3.11 · LangGraph · langchain-openai · Pydantic v2 · Typer/Rich · Jinja2。LLM 用智谱 GLM（OpenAI 兼容端点），主链 `glm-5.1`，开发调试用免费的 `glm-4.7-flash`。
+技术栈：Python ≥ 3.11 · LangGraph · langchain-openai · Pydantic v2 · Typer/Rich · Jinja2。LLM 用智谱 GLM Coding Plan（OpenAI 兼容订阅端点 `…/api/coding/paas/v4/`），主链 `glm-5.1`，开发调试用轻量的 `glm-4.5-air`。
 
 ## 安装
 
@@ -49,14 +49,14 @@ pytest tests/
 evopm run --mock                 # mock 模式：跳过 GitHub API 与 web_search，全用本地材料
 evopm run --replay               # 离线重放：LLM 全走缓存（断网演示兜底）
 evopm run                        # live 模式：真实 GitHub API + web_search
-evopm run --model glm-4.7-flash  # 指定开发期免费模型
+evopm run --model glm-4.5-air  # 指定开发期轻量模型
 evopm run --data data/demo_kb    # 指定数据目录
 evopm init                       # 交互式问答生成 data/<name>/product.yaml
 ```
 
 > **运行真实链路需要 `ZHIPUAI_API_KEY`**（`--mock` 也要，只是跳过 GitHub/web_search）。无 key 时 `pytest tests/` 仍全绿——需要真实 LLM 的 fixture 会自动 skip。
 
-开发与测试遵循 **先 mock 跑通、再接真实 API** 的顺序：先用 `data/demo_kb/` 的本地 mock 数据 + `--mock` + `glm-4.7-flash` 跑通全链，稳定后再逐项接真实 GitHub API → web_search → `glm-5.1`。
+开发与测试遵循 **先 mock 跑通、再接真实 API** 的顺序：先用 `data/demo_kb/` 的本地 mock 数据 + `--mock` + `glm-4.5-air` 跑通全链，稳定后再逐项接真实 GitHub API → web_search → `glm-5.1`。
 
 ## 测试
 

@@ -118,8 +118,8 @@ def test_enrich_live_demo_highlight():
     cf, tf = make_findings()
     valid_ids = {"sig-001", "sig-002", "sig-003", "cf-01", "tf-01"}
     agent = RequirementAgent()
-    draft, _ = agent.draft_and_score(cluster, cf, tf, valid_ids=valid_ids, model="glm-4.7-flash")
-    enriched, _ = agent.enrich(draft, cluster, cf, tf, valid_ids=valid_ids, model="glm-4.7-flash")
+    draft, _ = agent.draft_and_score(cluster, cf, tf, valid_ids=valid_ids, model="glm-4.5-air")
+    enriched, _ = agent.enrich(draft, cluster, cf, tf, valid_ids=valid_ids, model="glm-4.5-air")
     assert enriched.quality.round == 2
     assert enriched.quality.total - draft.quality.total >= 15
     assert enriched.quality.gate == GateStatus.PASS

@@ -101,7 +101,7 @@ def test_draft_live():
     cf, tf = make_findings()
     valid_ids = {"sig-001", "sig-002", "sig-003", "cf-01", "tf-01"}
     cand, _ = RequirementAgent().draft_and_score(
-        cluster, cf, tf, valid_ids=valid_ids, model="glm-4.7-flash"
+        cluster, cf, tf, valid_ids=valid_ids, model="glm-4.5-air"
     )
     assert cand.quality is not None
     assert [d.name for d in cand.quality.dimensions] == QUALITY_DIMS

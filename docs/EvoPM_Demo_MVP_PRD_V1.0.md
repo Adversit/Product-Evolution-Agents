@@ -29,7 +29,7 @@ EvoPM Agent：面向产品迭代的多智能体需求决策系统。输入真实
 | 项 | 约束 |
 |---|---|
 | 编排 | LangGraph（Python） |
-| LLM | 智谱 GLM API：主链 `glm-5.1`，开发调试 `glm-4.7-flash`（免费） |
+| LLM | 智谱 GLM Coding Plan（订阅端点 `…/api/coding/paas/v4/`）：主链 `glm-5.1`，开发调试 `glm-4.5-air`（轻量） |
 | 形态 | 后端 pipeline + CLI + Markdown 报告；前端仅在时间富余时做 |
 | 数据策略 | 先 mock 数据跑通全流程，再接真实数据（GitHub API / web_search）测试 |
 | 密钥 | `.env` 管理，纳入 `.gitignore`，提交 `.env.example` |
@@ -148,7 +148,7 @@ START → intake（M0-M3 / Intake Agent）
   - LLM 响应磁盘缓存（prompt hash → json）+ `--replay` 离线重放（对抗现场断网）；
   - 外部依赖（GitHub API / web_search）失败 → 自动降级 mock；
   - 证据引用代码侧校验。
-- **GLM 集成**：`langchain_openai.ChatOpenAI(base_url="https://open.bigmodel.cn/api/paas/v4/")`；结构化输出 `with_structured_output(method="function_calling")`（**不可用 json_schema 模式**）；temperature ∈ (0,1)，取 0.1（**不能取 0**）；主链 `glm-5.1`，开发期 `glm-4.7-flash`（免费，并发低注意 429）。
+- **GLM 集成**：`langchain_openai.ChatOpenAI(base_url="https://open.bigmodel.cn/api/coding/paas/v4/")`；结构化输出 `with_structured_output(method="function_calling")`（**不可用 json_schema 模式**）；temperature ∈ (0,1)，取 0.1（**不能取 0**）；主链 `glm-5.1`，开发期 `glm-4.5-air`（轻量；Coding Plan 5 小时滚动 token 配额，避免突发并发触发 429）。
 - **web_search**：chat 请求 `extra_body` 传 `{"tools":[{"type":"web_search","web_search":{"enable":true,"search_engine":"search_pro","search_result":true}}]}`，返回的搜索结果（标题/链接/摘要/日期）直接作为证据来源。
 - **密钥管理**：`ZHIPUAI_API_KEY`、`GITHUB_TOKEN`（可选）放 `.env`；提交 `.env.example`；`.gitignore` 覆盖 `.env`、`runs/`、`__pycache__`、LLM 缓存目录。
 - **git**：每完成一个独立功能即 commit；模块开发使用 git worktree 并行分支。

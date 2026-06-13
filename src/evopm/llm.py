@@ -27,7 +27,7 @@ load_dotenv()
 # --------------------------------------------------------------------------- #
 # 常量与异常
 # --------------------------------------------------------------------------- #
-BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
+BASE_URL = "https://open.bigmodel.cn/api/coding/paas/v4/"
 DEFAULT_MODEL = "glm-5.1"
 REQUEST_TIMEOUT = 120  # 单次结构化请求超时（秒）
 WEB_SEARCH_TIMEOUT = 20  # web_search 超时（秒）

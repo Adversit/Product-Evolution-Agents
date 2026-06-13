@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skipif(
     not os.environ.get("ZHIPUAI_API_KEY"), reason="needs ZHIPUAI_API_KEY"
 )
 
-_MODEL = os.environ.get("EVOPM_MODEL", "glm-4.7-flash")
+_MODEL = os.environ.get("EVOPM_MODEL", "glm-4.5-air")
 
 
 def _cluster() -> InsightCluster:

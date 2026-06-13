@@ -19,7 +19,7 @@
 
 ### T0.3 llm.py（GLM 封装） ⏱2h
 - 范围：spec §6 三个函数：`get_chat`（base_url/温度约束）、`structured_call`（function_calling 结构化输出 + sha256 磁盘缓存 + replay 模式 + 429 指数退避 3 次 + 校验失败重试 1 次）、`web_search_call`（extra_body web_search + 20s 超时 + `WebSearchUnavailable`）。
-- 验收：用 `glm-4.7-flash` 真实调一次 structured_call 返回合法 Pydantic 对象；断网/无 key 时 replay 模式可从缓存读取；单测 mock 验证重试逻辑。
+- 验收：用 `glm-4.5-air` 真实调一次 structured_call 返回合法 Pydantic 对象；断网/无 key 时 replay 模式可从缓存读取；单测 mock 验证重试逻辑。
 
 ### T0.4 config.py + agents/base.py ⏱1h
 - 范围：`load_product_context(path)`（yaml→ProductContext）、`load_existing_requirements`、`load_repo_map`；`BaseAgent`（prompt 文件加载 + structured_call 包装）+ **证据闭包校验函数** `validate_evidence_refs(output, valid_ids) -> (clean_output, violations)`（spec §4 末尾）。
@@ -139,7 +139,7 @@
 
 ### T7.1 graph.py 组装 ⏱2h
 - 范围：spec §3.2 全部节点/边/四个条件路由（route_research_out/route_gate/route_critic/route_review）/MemorySaver/interrupt 接线；**严格按 §3.2「集成接线要点」处理 fan-in 与补证据重入**；计数器自增所有权（enrich→enrich 节点、clarify→clarify_human 节点、redo→critic 节点、more_evidence→human_review 节点；路由函数纯只读）；编译传 `recursion_limit=50` + `thread_id`。
-- 验收：`evopm run --mock --model glm-4.7-flash` 全链跑通，3 个 interrupt 可交互；首轮两调研节点 fan-in 后 quality_gate 只执行一次（日志验证）。
+- 验收：`evopm run --mock --model glm-4.5-air` 全链跑通，3 个 interrupt 可交互；首轮两调研节点 fan-in 后 quality_gate 只执行一次（日志验证）。
 
 ### T7.2 门禁剧情校准 ⏱1.5h
 - 范围：调 feedback.csv 措辞 / 评分锚点 prompt，使初评 55–62、enrich 后 ≥80。

@@ -129,7 +129,7 @@ def test_critic_acceptance_live():
         violations=["某结论 evidence_refs 剔除 ['sig-999']"],
         high_risk_items=["deepdoc/parser（核心模块）：改解析逻辑"],
         redo_rounds=1,
-        model="glm-4.7-flash",
+        model="glm-4.5-air",
     )
     # redo_rounds=1 → 必为 None
     assert review.redo_target is None
