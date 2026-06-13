@@ -1,0 +1,148 @@
+{
+  "findings": [
+    {
+      "id": "cf-01",
+      "competitor": "Dify",
+      "research_question": "竞品如何处理和显示文档解析过程中的错误信息？是否提供详细的错误详情和解析状态追踪？",
+      "has_solved": true,
+      "conclusion": "Dify 在文档解析状态追踪方面相对成熟，文档列表显示'处理中/可用/错误'状态，失败的文档会标红并允许重新处理，支持解析结果预览",
+      "verdict": "adopt",
+      "gap_description": "解析进度可视化粒度未明确，无法确定是否支持步骤级追踪",
+      "implication": "这是 Dify 相对成熟的能力，RAGFlow 可以对标其清晰的状态标识和失败重试功能，特别是预览解析结果对用户体验很有价值",
+      "source_url": "mock://Dify_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-02",
+      "competitor": "Dify",
+      "research_question": "竞品是否实现了自动重试机制来解决解析失败问题？用户是否可以手动触发重试操作？",
+      "has_solved": true,
+      "conclusion": "支持手动重试操作，失败的文档可以被标记并重新处理",
+      "verdict": "adopt",
+      "gap_description": "未提及是否支持自动重试机制",
+      "implication": "手动重试功能是成熟且可对标的，为 RAGFlow 提供了明确的参考模式，应优先实现该基础能力",
+      "source_url": "mock://Dify_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-03",
+      "competitor": "Dify",
+      "research_question": "竞品如何监控和解析任务的执行状态？当解析卡顿时，用户能否及时收到通知并了解具体进度？",
+      "has_solved": null,
+      "conclusion": "提供进度提示，长文档批量处理时显示状态，但未明确说明卡顿时是否有通知机制和详细进度追踪",
+      "verdict": "watch",
+      "gap_description": "卡顿通知和详细进度追踪机制不明确",
+      "implication": "需要持续观察 Dify 在卡顿处理方面的具体实现，如果缺乏有效的卡顿通知机制，这可能是 RAGFlow 的差异化机会",
+      "source_url": "mock://Dify_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "cf-04",
+      "competitor": "Dify",
+      "research_question": "竞品在解析失败时的用户体验设计如何？是否提供清晰的错误提示、故障排除指南或替代方案建议？",
+      "has_solved": null,
+      "conclusion": "提供清晰的错误状态标识和重新处理功能，但未提及故障排除指南或替代方案建议",
+      "verdict": "watch",
+      "gap_description": "缺乏故障排除指南和替代方案",
+      "implication": "基础错误处理已具备，但可以进一步优化用户体验，增加故障排除指南和替代方案建议来提升竞争力",
+      "source_url": "mock://Dify_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-05",
+      "competitor": "Open WebUI",
+      "research_question": "竞品如何处理和显示文档解析过程中的错误信息？是否提供详细的错误详情和解析状态追踪？",
+      "has_solved": false,
+      "conclusion": "处理过程偏'黑盒'，没有面向用户的细粒度解析进度或步骤可视化，错误信息不明确",
+      "verdict": "avoid",
+      "gap_description": "缺乏详细的错误信息和解析状态追踪",
+      "implication": "Open WebUI 在这方面表现较弱，不构成对 RAGFlow 的威胁，反而为 RAGFlow 提供了差异化机会",
+      "source_url": "mock://Open_WebUI_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-06",
+      "competitor": "Open WebUI",
+      "research_question": "竞品是否实现了自动重试机制来解决解析失败问题？用户是否可以手动触发重试操作？",
+      "has_solved": null,
+      "conclusion": "材料中未提及解析失败后的重试机制或重试操作",
+      "verdict": "watch",
+      "gap_description": "重试机制不明确",
+      "implication": "作为本地化部署方案，Open WebUI 在解析失败处理方面可能存在不足，需要持续观察其相关功能的演进",
+      "source_url": "mock://Open_WebUI_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "cf-07",
+      "competitor": "Open WebUI",
+      "research_question": "竞品如何监控和解析任务的执行状态？当解析卡顿时，用户能否及时收到通知并了解具体进度？",
+      "has_solved": false,
+      "conclusion": "没有面向用户的细粒度解析进度或步骤可视化，缺乏卡顿时状态追踪和通知机制",
+      "verdict": "avoid",
+      "gap_description": "缺乏解析进度可视化和卡顿通知",
+      "implication": "Open WebUI 在监控和状态追踪方面存在明显短板，这正好是 RAGFlow 可以发挥优势的地方",
+      "source_url": "mock://Open_WebUI_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-08",
+      "competitor": "Open WebUI",
+      "research_question": "竞品在解析失败时的用户体验设计如何？是否提供清晰的错误提示、故障排除指南或替代方案建议？",
+      "has_solved": false,
+      "conclusion": "作为轻量级解决方案，其'黑盒'处理方式缺乏清晰的用户反馈和错误处理",
+      "verdict": "avoid",
+      "gap_description": "缺乏错误处理和用户体验设计",
+      "implication": "Open WebUI 的解析失败处理较为简陋，这为 RAGFlow 在企业级应用中建立更好的用户体验提供了机会",
+      "source_url": "mock://Open_WebUI_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-09",
+      "competitor": "AnythingLLM",
+      "research_question": "竞品如何处理和显示文档解析过程中的错误信息？是否提供详细的错误详情和解析状态追踪？",
+      "has_solved": false,
+      "conclusion": "只显示文件级的嵌入状态，缺乏解析过程中的详细状态追踪和错误信息展示",
+      "verdict": "avoid",
+      "gap_description": "缺乏解析过程状态追踪",
+      "implication": "AnythingLLM 在解析状态追踪方面明显不足，RAGFlow 可以通过提供更细粒度的状态追踪来建立优势",
+      "source_url": "mock://AnythingLLM_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-10",
+      "competitor": "AnythingLLM",
+      "research_question": "竞品是否实现了自动重试机制来解决解析失败问题？用户是否可以手动触发重试操作？",
+      "has_solved": null,
+      "conclusion": "材料中未提及解析失败的重试机制",
+      "verdict": "watch",
+      "gap_description": "重试机制不明确",
+      "implication": "需要持续观察 AnythingLLM 是否会发展出解析失败重试功能，当前可能是 RAGFlow 建立优势的时机",
+      "source_url": "mock://AnythingLLM_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "cf-11",
+      "competitor": "AnythingLLM",
+      "research_question": "竞品如何监控和解析任务的执行状态？当解析卡顿时，用户能否及时收到通知并了解具体进度？",
+      "has_solved": false,
+      "conclusion": "只提供文件级的嵌入进度指示，缺乏步骤级的细粒度进度可视化和卡顿通知",
+      "verdict": "avoid",
+      "gap_description": "缺乏细粒度进度可视化",
+      "implication": "AnythingLLM 的进度追踪过于粗粒度，这正是 RAGFlow 可以实现差异化的关键领域",
+      "source_url": "mock://AnythingLLM_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-12",
+      "competitor": "AnythingLLM",
+      "research_question": "竞品在解析失败时的用户体验设计如何？是否提供清晰的错误提示、故障排除指南或替代方案建议？",
+      "has_solved": null,
+      "conclusion": "材料中未详细提及解析失败时的用户体验设计",
+      "verdict": "watch",
+      "gap_description": "用户体验设计信息不足",
+      "implication": "AnythingLLM 在失败处理方面的设计不够明确，这可能意味着存在优化空间，值得 RAGFlow 关注和改进",
+      "source_url": "mock://AnythingLLM_上传_解析_引用能力_竞品材料",
+      "evidence_strength": "weak"
+    }
+  ]
+}

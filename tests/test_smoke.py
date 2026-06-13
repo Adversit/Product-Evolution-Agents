@@ -540,16 +540,15 @@ def test_degrade(monkeypatch):
 # --------------------------------------------------------------------------- #
 # 5：test_replay_e2e（需密钥生成缓存 fixture）
 # --------------------------------------------------------------------------- #
-@pytest.mark.skipif(
-    not os.environ.get("ZHIPUAI_API_KEY"),
-    reason="needs key to generate replay cache",
-)
 def test_replay_e2e(monkeypatch):
     """完整 replay 端到端：4 报告 / quality.round==2 / total 提升 / blocked==False / 闭包合法。
 
-    前置：先用真实 key 跑一次 mock/live 落缓存（runs/.cache/），本测试再 replay 命中。
+    读取提交进仓库的缓存 fixture（tests/replay_cache/，glm-4.5-air 生成），**无需 key、可离线运行**。
     """
     monkeypatch.chdir(_repo_root())
+    # 用提交进仓库的缓存 fixture（glm-4.5-air 生成），保证离线 / CI / 任意 EVOPM_MODEL 下可复现。
+    monkeypatch.setenv("EVOPM_MODEL", "glm-4.5-air")
+    monkeypatch.setattr(llm, "CACHE_DIR", _repo_root() / "tests" / "replay_cache")
     llm.reset_budget()
     llm.set_run_mode("replay")
 

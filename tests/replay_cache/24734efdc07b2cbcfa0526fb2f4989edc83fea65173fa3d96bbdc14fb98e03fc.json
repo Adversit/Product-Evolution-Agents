@@ -1,0 +1,94 @@
+{
+  "clusters": [
+    {
+      "id": "clu-01",
+      "title": "文档解析失败与卡顿问题",
+      "summary": "解析任务经常卡住、失败且无错误提示，导致用户无法判断状态和恢复",
+      "signal_ids": [
+        "sig-001",
+        "sig-002",
+        "sig-003",
+        "sig-005",
+        "sig-014",
+        "sig-021",
+        "sig-022",
+        "sig-023"
+      ],
+      "categories": [
+        "performance",
+        "stability",
+        "bug"
+      ],
+      "severity": "high",
+      "frequency": 8,
+      "status": "duplicate",
+      "candidate_title": "解析失败重试与错误详情显示",
+      "user_story_draft": "作为用户，我希望在解析失败时能清楚看到具体的错误原因，并且能快速重试单个失败的解析任务，而不需要重新上传整个文件。",
+      "duplicate_of_existing": "ex-02",
+      "dedup_reason": "该簇与历史需求ex-02（解析失败重试与错误详情）高度重合，都涉及解析失败、卡住、无错误提示等问题，且ex-02已标记为已知问题。"
+    },
+    {
+      "id": "clu-02",
+      "title": "解析进度可视化与状态反馈",
+      "summary": "解析过程中缺乏进度显示和状态反馈，用户体验不佳",
+      "signal_ids": [
+        "sig-004",
+        "sig-006",
+        "sig-016",
+        "sig-017"
+      ],
+      "categories": [
+        "ux"
+      ],
+      "severity": "medium",
+      "frequency": 4,
+      "status": "duplicate",
+      "candidate_title": "支持解析进度百分比展示",
+      "user_story_draft": "作为用户，我希望在文档解析过程中能看到具体的进度条或百分比，让我知道解析进行到哪一步了，还需要等多久。",
+      "duplicate_of_existing": "ex-01",
+      "dedup_reason": "该簇与历史需求ex-01（支持解析进度百分比展示）完全一致，都要求显示解析进度条/百分比，且ex-01已列入roadmap。"
+    },
+    {
+      "id": "clu-03",
+      "title": "多知识库检索质量问题",
+      "summary": "多知识库检索时召回质量下降，相关文档漏检严重",
+      "signal_ids": [
+        "sig-008",
+        "sig-010",
+        "sig-025"
+      ],
+      "categories": [
+        "performance"
+      ],
+      "severity": "high",
+      "frequency": 3,
+      "status": "duplicate",
+      "candidate_title": "混合检索召回质量优化",
+      "user_story_draft": "作为用户，我希望在跨多个知识库检索时，系统不会漏掉相关文档且回答更贴近我的问题需求。",
+      "duplicate_of_existing": "ex-03",
+      "dedup_reason": "该簇与历史需求ex-03（混合检索召回质量优化）高度重合，都涉及多知识库检索质量下降、召回相关性差的问题，且ex-03已列入roadmap。"
+    },
+    {
+      "id": "clu-04",
+      "title": "引用与表格解析准确性问题",
+      "summary": "引用溯源位置错误、表格数据解析准确率下降，影响答案可信度",
+      "signal_ids": [
+        "sig-009",
+        "sig-011",
+        "sig-012",
+        "sig-026",
+        "sig-027"
+      ],
+      "categories": [
+        "bug"
+      ],
+      "severity": "high",
+      "frequency": 5,
+      "status": "new",
+      "candidate_title": "引用溯源与表格解析准确率提升",
+      "user_story_draft": "作为用户，我希望回答中的引用能准确跳转到原文正确位置，表格数据能被正确解析并提供准确的答案。",
+      "duplicate_of_existing": null,
+      "dedup_reason": ""
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "decision": {
+    "requirement_id": "req-01",
+    "scores": [
+      {
+        "dimension": "pain_frequency",
+        "score": 90,
+        "rationale": "大型文档解析失败问题频次高（簇clu-01频次8），严重影响用户工作流，每次失败都需要手动重试且缺乏反馈",
+        "evidence_refs": [
+          "clu-01"
+        ]
+      },
+      {
+        "dimension": "severity",
+        "score": 85,
+        "rationale": "问题严重影响工作效率和用户信任度（high严重度），用户无法获得必要信息解决解析失败问题",
+        "evidence_refs": [
+          "clu-01"
+        ]
+      },
+      {
+        "dimension": "competitor_gap",
+        "score": 75,
+        "rationale": "Dify已提供基础的状态追踪和重试功能(cf-01,cf-02)，但RAGFlow在错误详情显示方面仍有提升空间，Open WebUI和AnythingLLM明显不足(cf-05,cf-07,cf-09)",
+        "evidence_refs": [
+          "cf-01",
+          "cf-02",
+          "cf-05",
+          "cf-07",
+          "cf-09"
+        ]
+      },
+      {
+        "dimension": "tech_feasibility",
+        "score": 95,
+        "rationale": "技术方案成熟度极高，失败重试策略、上传状态机等解决方案成熟且可直接应用(cf-01,tf-01,tf-02,tf-04)",
+        "evidence_refs": [
+          "tf-01",
+          "tf-02",
+          "tf-04"
+        ]
+      },
+      {
+        "dimension": "requirement_quality",
+        "score": 86,
+        "rationale": "需求质量总分为86，质量较高，痛点明确（卡顿、失败、无反馈），解决方案清晰（重试、状态显示、错误详情）",
+        "evidence_refs": [
+          "focus_requirement"
+        ]
+      },
+      {
+        "dimension": "cost",
+        "score": 85,
+        "rationale": "中等成本实现，主要涉及错误分类+重试装饰器、状态机设计和前端展示(tf-01,tf-02,tf-03的medium成本评估)",
+        "evidence_refs": [
+          "tf-01",
+          "tf-02",
+          "tf-03"
+        ]
+      },
+      {
+        "dimension": "business_value",
+        "score": 90,
+        "rationale": "显著提升用户体验和工作效率，减少支持成本，增强用户信任，对企业级应用尤为重要",
+        "evidence_refs": [
+          "focus_requirement"
+        ]
+      },
+      {
+        "dimension": "strategy_fit",
+        "score": 88,
+        "rationale": "直接提升核心解析功能体验，符合'提升体验'的团队偏好，解决企业级用户痛点",
+        "evidence_refs": [
+          "weights_context"
+        ]
+      },
+      {
+        "dimension": "urgency",
+        "score": 80,
+        "rationale": "高频发生且影响严重，需要优先解决用户盲等待和重复操作问题，但不是业务阻断性问题",
+        "evidence_refs": [
+          "clu-01"
+        ]
+      },
+      {
+        "dimension": "core_path_impact",
+        "score": 85,
+        "rationale": "直接影响文档解析核心链路，是用户主要交互场景，优化后大幅提升整体使用体验",
+        "evidence_refs": [
+          "focus_requirement"
+        ]
+      }
+    ],
+    "total": 86.5,
+    "priority": "P0",
+    "horizon": "now",
+    "rationale": "高优先级实现机会，解决高频严重痛点，技术可行且商业价值显著",
+    "special_types": []
+  },
+  "roadmap": [
+    {
+      "cluster_id": "clu-01",
+      "title": "文档解析失败与卡顿问题",
+      "priority": "P0",
+      "horizon": "now",
+      "one_line_reason": "焦点需求，高频严重痛点，技术成熟可直接解决",
+      "is_focus": true
+    },
+    {
+      "cluster_id": "clu-02",
+      "title": "解析进度可视化与状态反馈",
+      "priority": "P2",
+      "horizon": "next",
+      "one_line_reason": "中等严重度和频次，状态为duplicate，与当前功能迭代相关",
+      "is_focus": false
+    },
+    {
+      "cluster_id": "clu-03",
+      "title": "多知识库检索质量问题",
+      "priority": "P3",
+      "horizon": "later",
+      "one_line_reason": "高严重度但低频次，状态为duplicate，优先级较低",
+      "is_focus": false
+    },
+    {
+      "cluster_id": "clu-04",
+      "title": "引用与表格解析准确性问题",
+      "priority": "P1",
+      "horizon": "now",
+      "one_line_reason": "新问题，高严重度和中高频次，需要优先处理",
+      "is_focus": false
+    }
+  ]
+}

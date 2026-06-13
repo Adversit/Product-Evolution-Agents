@@ -1,0 +1,335 @@
+{
+  "impact": {
+    "requirement_id": "req-01",
+    "items": [
+      {
+        "module_path": "deepdoc/parser",
+        "impact_level": "certain",
+        "impact_types": [
+          "service",
+          "data_model"
+        ],
+        "description": "需要扩展解析器失败状态记录和错误信息存储能力，支持结构化错误详情展示",
+        "is_core_module": true,
+        "risk_tier": "high",
+        "verify_points": [
+          "解析器能够记录并返回详细的错误信息（错误类型代码、失败步骤、失败原因）",
+          "支持解析状态变更和失败状态持久化"
+        ]
+      },
+      {
+        "module_path": "rag/svr",
+        "impact_level": "certain",
+        "impact_types": [
+          "api",
+          "service",
+          "config"
+        ],
+        "description": "修改异步任务队列支持重试机制、心跳检测和进度追踪，实现指数退避算法",
+        "is_core_module": true,
+        "risk_tier": "high",
+        "verify_points": [
+          "实现任务重试逻辑，支持指数退避重试（1秒、2秒、4秒）",
+          "实现心跳检测机制，30分钟无更新标记为卡顿",
+          "支持任务进度的分阶段上报和状态同步"
+        ]
+      },
+      {
+        "module_path": "api/db",
+        "impact_level": "certain",
+        "impact_types": [
+          "api",
+          "data_model"
+        ],
+        "description": "扩展数据模型以支持解析任务状态、进度信息、错误详情和重试次数存储",
+        "is_core_module": false,
+        "risk_tier": "medium",
+        "verify_points": [
+          "数据模型包含任务状态、进度百分比、错误详情、重试次数字段",
+          "支持任务状态的实时查询和更新"
+        ]
+      },
+      {
+        "module_path": "web/src",
+        "impact_level": "certain",
+        "impact_types": [
+          "frontend",
+          "tests",
+          "docs"
+        ],
+        "description": "新增解析进度展示组件、错误详情展示组件和重试按钮功能",
+        "is_core_module": false,
+        "risk_tier": "medium",
+        "verify_points": [
+          "实现进度条显示（当前步骤、已处理分块、完成百分比、预计剩余时间）",
+          "实现错误详情结构化展示组件",
+          "实现重试按钮和重试过程状态展示"
+        ]
+      },
+      {
+        "module_path": "deepdoc/vision",
+        "impact_level": "possible",
+        "impact_types": [
+          "service"
+        ],
+        "description": "可能需要调整OCR处理模块以配合心跳检测机制",
+        "is_core_module": false,
+        "risk_tier": "low",
+        "verify_points": [
+          "验证OCR处理过程中的心跳状态上报"
+        ]
+      },
+      {
+        "module_path": "rag/nlp",
+        "impact_level": "uncertain",
+        "impact_types": [
+          "api",
+          "service"
+        ],
+        "description": "可能需要分词模块在解析失败时提供错误处理建议",
+        "is_core_module": true,
+        "risk_tier": "medium",
+        "verify_points": [
+          "验证NLP模块是否需要集成错误处理和建议功能"
+        ]
+      }
+    ],
+    "suggested_order": [
+      "deepdoc/parser",
+      "api/db",
+      "rag/svr",
+      "web/src",
+      "deepdoc/vision",
+      "rag/nlp"
+    ],
+    "human_confirmation_needed": [
+      "deepdoc/parser",
+      "rag/svr"
+    ]
+  },
+  "execution": {
+    "requirement_id": "req-01",
+    "tasks": [
+      {
+        "id": "task-01",
+        "type": "backend",
+        "title": "解析任务失败状态管理模块",
+        "description": "在 deepdoc/parser 中实现解析失败状态的记录和错误信息结构化存储",
+        "related_modules": [
+          "deepdoc/parser"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "high"
+      },
+      {
+        "id": "task-02",
+        "type": "data",
+        "title": "解析任务数据模型扩展",
+        "description": "在 api/db 中扩展任务状态数据模型，添加进度信息、错误详情和重试次数字段",
+        "related_modules": [
+          "api/db"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "medium"
+      },
+      {
+        "id": "task-03",
+        "type": "backend",
+        "title": "任务重试机制实现",
+        "description": "在 rag/svr 中实现指数退避重试算法，支持最多3次重试和重试进度追踪",
+        "related_modules": [
+          "rag/svr"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "high"
+      },
+      {
+        "id": "task-04",
+        "type": "backend",
+        "title": "心跳检测与超时机制",
+        "description": "在 rag/svr 中实现解析任务心跳检测，30分钟无更新标记为卡顿并通知",
+        "related_modules": [
+          "rag/svr"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "high"
+      },
+      {
+        "id": "task-05",
+        "type": "frontend",
+        "title": "进度展示组件开发",
+        "description": "在 web/src 中实现解析进度展示组件，包括步骤信息、完成百分比和预计剩余时间",
+        "related_modules": [
+          "web/src"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "medium"
+      },
+      {
+        "id": "task-06",
+        "type": "frontend",
+        "title": "错误详情展示组件",
+        "description": "在 web/src 中实现错误详情结构化展示组件，显示错误类型代码、失败原因和解决建议",
+        "related_modules": [
+          "web/src"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "medium"
+      },
+      {
+        "id": "task-07",
+        "type": "frontend",
+        "title": "重试按钮与状态管理",
+        "description": "在 web/src 中实现重试按钮功能，支持单任务重试和重试过程状态展示",
+        "related_modules": [
+          "web/src"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "medium"
+      },
+      {
+        "id": "task-08",
+        "type": "backend",
+        "title": "实时进度上报机制",
+        "description": "在 rag/svr 中实现解析进度的分阶段实时上报机制",
+        "related_modules": [
+          "rag/svr"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "medium"
+      },
+      {
+        "id": "task-09",
+        "type": "product",
+        "title": "解析任务列表状态筛选",
+        "description": "在 web/src 中实现解析任务列表的状态筛选功能，支持按状态筛选任务",
+        "related_modules": [
+          "web/src"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "low"
+      },
+      {
+        "id": "task-10",
+        "type": "test",
+        "title": "重试机制和心跳检测测试",
+        "description": "编写测试用例验证重试机制和心跳检测功能",
+        "related_modules": [
+          "test",
+          "rag/svr"
+        ],
+        "evidence_refs": [
+          "req-01"
+        ],
+        "risk_tier": "medium"
+      }
+    ],
+    "change_suggestions": [
+      "在 deepdoc/parser 中扩展错误信息结构，包含错误类型代码、失败步骤、失败原因和解决建议字段",
+      "在 rag/svr 中实现任务状态机，支持初始化、处理中、失败、重试中、完成等状态",
+      "在 api/db 中添加任务进度表，存储每个任务的实时进度信息和错误详情",
+      "在 web/src 中新增解析任务状态展示页面，包含进度条、错误详情和重试按钮"
+    ],
+    "test_suggestions": [
+      "编写单元测试验证解析器的错误信息记录功能",
+      "编写集成测试验证完整解析任务流程，包括失败重试机制",
+      "编写前端组件测试验证进度展示和错误详情展示功能",
+      "编写性能测试验证重试机制在高并发情况下的表现",
+      "编写端到端测试验证用户从上传到重试的完整流程"
+    ],
+    "impl_plan": [
+      {
+        "step": 1,
+        "action": "设计和实现解析任务数据模型扩展",
+        "modules": [
+          "api/db"
+        ],
+        "verify": "数据模型扩展完成，包含任务状态、进度信息、错误详情和重试次数字段",
+        "risk": "数据模型变更可能影响现有查询接口"
+      },
+      {
+        "step": 2,
+        "action": "实现解析器的失败状态记录和错误信息存储",
+        "modules": [
+          "deepdoc/parser"
+        ],
+        "verify": "解析器能够正确记录和返回结构化错误信息",
+        "risk": "解析器扩展可能影响现有解析性能"
+      },
+      {
+        "step": 3,
+        "action": "开发任务队列的重试机制和心跳检测",
+        "modules": [
+          "rag/svr"
+        ],
+        "verify": "实现指数退避重试算法和30分钟心跳检测",
+        "risk": "任务队列改动可能影响现有任务的执行"
+      },
+      {
+        "step": 4,
+        "action": "实现实时进度上报机制",
+        "modules": [
+          "rag/svr"
+        ],
+        "verify": "解析任务能够实时上报进度信息",
+        "risk": "频繁的状态更新可能影响系统性能"
+      },
+      {
+        "step": 5,
+        "action": "开发前端进度展示组件",
+        "modules": [
+          "web/src"
+        ],
+        "verify": "前端能够正确显示解析进度和状态信息",
+        "risk": "前端组件可能需要适配多种屏幕尺寸"
+      },
+      {
+        "step": 6,
+        "action": "开发错误详情展示组件和重试功能",
+        "modules": [
+          "web/src"
+        ],
+        "verify": "用户能够查看详细错误信息并执行重试操作",
+        "risk": "用户交互逻辑可能需要多次迭代优化"
+      },
+      {
+        "step": 7,
+        "action": "实现任务列表状态筛选功能",
+        "modules": [
+          "web/src"
+        ],
+        "verify": "用户能够按状态筛选解析任务",
+        "risk": "列表查询性能需要优化"
+      },
+      {
+        "step": 8,
+        "action": "集成测试和系统验证",
+        "modules": [
+          "test"
+        ],
+        "verify": "完整解析任务流程验证通过，包括失败重试和心跳检测",
+        "risk": "集成测试可能发现未考虑的边界情况"
+      }
+    ],
+    "changelog_draft": "新增解析失败重试与错误详情显示功能，包括：1) 解析任务失败时显示详细错误信息（错误类型代码、失败步骤、原因和建议）；2) 支持单任务重试功能，采用指数退避算法（1秒、2秒、4秒），最多3次重试；3) 实时显示解析进度（当前步骤、完成百分比、预计剩余时间）；4) 实现30分钟心跳检测，任务卡超时自动通知用户；5) 新增解析任务列表的状态筛选功能。",
+    "blocked": false
+  }
+}

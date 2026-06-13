@@ -1,0 +1,274 @@
+{
+  "signals": [
+    {
+      "id": "sig-001",
+      "module_guess": "PDF文件解析模块",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "sufficient",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-002",
+      "module_guess": "文档解析引擎",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "sufficient",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-003",
+      "module_guess": "解析状态管理",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-004",
+      "module_guess": "解析进度显示",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-005",
+      "module_guess": "大文件处理",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-006",
+      "module_guess": "错误处理机制",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-007",
+      "module_guess": "GraphRAG解析",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": "sig-023",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-008",
+      "module_guess": "检索算法",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-009",
+      "module_guess": "引用标注",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-010",
+      "module_guess": "多知识库检索",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": "sig-025",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-011",
+      "module_guess": "表格解析",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": "sig-026",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-012",
+      "module_guess": "引用溯源",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": "sig-027",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-013",
+      "module_guess": "文件上传验证",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-014",
+      "module_guess": "docx文件处理",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-015",
+      "module_guess": "批量上传",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-016",
+      "module_guess": "进度显示",
+      "category": "ux",
+      "sentiment": "neutral",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-017",
+      "module_guess": "界面进度条",
+      "category": "ux",
+      "sentiment": "neutral",
+      "actionability": "sufficient",
+      "duplicate_of": "sig-016",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-018",
+      "module_guess": "用户情绪",
+      "category": "misuse",
+      "sentiment": "negative",
+      "actionability": "emotional",
+      "duplicate_of": null,
+      "data_quality": "noisy",
+      "followup_question": "您遇到了什么具体的使用问题？"
+    },
+    {
+      "id": "sig-019",
+      "module_guess": "安装文档",
+      "category": "docs",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-020",
+      "module_guess": "ollama配置",
+      "category": "config",
+      "sentiment": "negative",
+      "actionability": "suspected_misuse",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": "您能分享具体的配置参数和错误信息吗？"
+    },
+    {
+      "id": "sig-021",
+      "module_guess": "解析错误处理",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": "sig-003",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-022",
+      "module_guess": "解析任务管理",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": "sig-001",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-023",
+      "module_guess": "GraphRAG解析",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-024",
+      "module_guess": "检索异常处理",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-025",
+      "module_guess": "多知识库检索",
+      "category": "performance",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-026",
+      "module_guess": "表格解析",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-027",
+      "module_guess": "引用标注算法",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "sufficient",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    }
+  ]
+}

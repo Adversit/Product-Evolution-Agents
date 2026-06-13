@@ -1,0 +1,203 @@
+{
+  "findings": [
+    {
+      "target": "需求 req-01：解析失败重试与错误详情显示",
+      "evidence_strength": "moderate",
+      "overreach": false,
+      "risk_tier": "medium",
+      "note": "需求涵盖范围较广，引用了多类证据，但部分证据需要确认实际内容支持程度",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-01：Dify 在文档解析状态追踪方面相对成熟，文档列表显示'处理中/可用/错误'状态，失败的文档会标红并允许重新处理，支持解析结果预览",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-01)，缺乏独立验证，结论可信度较低",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-02：支持手动重试操作，失败的文档可以被标记并重新处理",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-02)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-03：提供进度提示，长文档批量处理时显示状态，但未明确说明卡顿时是否有通知机制和详细进度追踪",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-03)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-04：提供清晰的错误状态标识和重新处理功能，但未提及故障排除指南或替代方案建议",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-04)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-05：处理过程偏'黑盒'，没有面向用户的细粒度解析进度或步骤可视化，错误信息不明确",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-05)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-06：材料中未提及解析失败后的重试机制或重试操作",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-06)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-07：没有面向用户的细粒度解析进度或步骤可视化，缺乏卡顿时状态追踪和通知机制",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-07)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-08：作为轻量级解决方案，其'黑盒'处理方式缺乏清晰的用户反馈和错误处理",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-08)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-09：只显示文件级的嵌入状态，缺乏解析过程中的详细状态追踪和错误信息展示",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-09)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-10：材料中未提及解析失败的重试机制",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-10)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-11：只提供文件级的嵌入进度指示，缺乏步骤级的细粒度进度可视化和卡顿通知",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-11)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "竞品发现 cf-12：材料中未详细提及解析失败时的用户体验设计",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(cf-12)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "技术发现 tf-01：解析失败重试策略",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "high",
+      "note": "自我引用证据(tf-01)，核心模块发现缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "技术发现 tf-02：上传与解析状态机",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "high",
+      "note": "自我引用证据(tf-02)，核心模块发现缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "技术发现 tf-03：解析失败重试策略",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "high",
+      "note": "自我引用证据(tf-03)，核心模块发现缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "技术发现 tf-04：指数退避重试机制",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "high",
+      "note": "自我引用证据(tf-04)，核心模块发现缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "技术发现 tf-05：阶段进度上报机制",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "high",
+      "note": "自我引用证据(tf-05)，核心模块发现缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "技术发现 tf-06：分块预览功能",
+      "evidence_strength": "inference_only",
+      "overreach": true,
+      "risk_tier": "low",
+      "note": "自我引用证据(tf-06)，缺乏独立验证",
+      "demote_to_observation": false
+    },
+    {
+      "target": "验收标准：当解析任务失败时，系统必须显示详细的错误信息，包括错误类型代码、失败步骤名称、失败原因描述和用户友好的解决建议",
+      "evidence_strength": "moderate",
+      "overreach": false,
+      "risk_tier": "high",
+      "note": "有信号和竞品、技术发现交叉验证，但实际内容支持程度需确认",
+      "demote_to_observation": false
+    },
+    {
+      "target": "验收标准：用户能够一键重试失败的解析任务，重试过程显示进度信息，重试完成后显示最终结果",
+      "evidence_strength": "moderate",
+      "overreach": false,
+      "risk_tier": "high",
+      "note": "有信号和竞品、技术发现交叉验证，但实际内容支持程度需确认",
+      "demote_to_observation": false
+    },
+    {
+      "target": "验收标准：解析过程必须实时显示进度信息，包括当前处理步骤名称、已处理分块数/总分块数、完成百分比和预计剩余时间",
+      "evidence_strength": "moderate",
+      "overreach": false,
+      "risk_tier": "high",
+      "note": "有信号和技术发现交叉验证，但实际内容支持程度需确认",
+      "demote_to_observation": false
+    },
+    {
+      "target": "验收标准：系统必须检测任务卡顿状态，当任务心跳超过30分钟无更新时，自动标记为卡顿并通知用户",
+      "evidence_strength": "moderate",
+      "overreach": false,
+      "risk_tier": "high",
+      "note": "有信号和技术发现交叉验证，但实际内容支持程度需确认",
+      "demote_to_observation": false
+    },
+    {
+      "target": "验收标准：重试机制必须在3秒内响应重试请求，重试过程最大允许执行时间为原任务时长的2倍且不超过4小时",
+      "evidence_strength": "moderate",
+      "overreach": false,
+      "risk_tier": "high",
+      "note": "有技术发现交叉验证，但实际内容支持程度需确认",
+      "demote_to_observation": false
+    }
+  ],
+  "pending_confirmations": [
+    "deepdoc/parser（核心模块）：需要扩展解析器失败状态记录和错误信息存储能力，支持结构化错误详情展示",
+    "rag/svr（核心模块）：修改异步任务队列支持重试机制、心跳检测和进度追踪，实现指数退避算法",
+    "rag/nlp（核心模块）：可能需要分词模块在解析失败时提供错误处理建议"
+  ],
+  "redo_target": "requirement",
+  "redo_instructions": "竞品发现和技术发现存在严重的自我引用问题，缺乏独立验证证据。建议重新收集竞品分析材料和技术调研材料，提供可验证的交叉证据支持竞品发现和技术发现的结论。特别是核心模块的技术发现(tf-01至tf-05)需要提供独立的技术文档、代码分析或测试数据作为支撑。"
+}
