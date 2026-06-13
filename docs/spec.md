@@ -128,6 +128,11 @@ class ReviewAction(str, Enum):       # M16 评审操作 5 种
 
 > 证据引用约定：所有 `evidence_refs: list[str]` 存的是 SignalItem / CompetitorFinding / TechFinding 的 `id`。
 > id 格式：信号 `sig-001`，簇 `clu-01`，竞品发现 `cf-01`，技术发现 `tf-01`，需求 `req-01`，任务 `task-01`。
+>
+> **id 分配责任（防 LLM 乱编 id）**：
+> - **SignalItem.id 由代码在加载时按顺序分配** `sig-001..sig-NNN`（先 CSV 后 issues），**在调用 intake LLM 之前**就已写入，LLM 只读不改、`duplicate_of` 引用这些 id。CSV 不要求 id 列（有也忽略）；issue 的原始 number 保留在 `origin_url`。
+> - clu/cf/tf/req/task 的 id 由对应 Agent **在单次 LLM 调用内**生成（响应内自洽），代码收到后校验：格式正确、响应内唯一；不唯一则带错误重试 1 次（走 structured_call 的校验重试）。
+> - `validate_evidence_refs` 的 valid_ids 由节点用 `collect_valid_ids(state)` 现场组装（intake 后 = 全 sig；research 后 += cf/tf；以此类推）。
 
 ```python
 class CompetitorConfig(BaseModel):
@@ -264,7 +269,7 @@ class OpportunityScore(BaseModel):
     rationale: str
     evidence_refs: list[str] = []
 
-class OpportunityDecision(BaseModel):    # M9
+class OpportunityDecision(BaseModel):    # M9 焦点需求精评
     requirement_id: str
     scores: list[OpportunityScore]
     total: float                     # 加权总分，代码计算
@@ -272,6 +277,14 @@ class OpportunityDecision(BaseModel):    # M9
     horizon: Horizon
     rationale: str
     special_types: list[SpecialType] = []
+
+class RoadmapEntry(BaseModel):       # M9/M15：非焦点簇的粗评，供 Now/Next/Later 路线图
+    cluster_id: str                  # 焦点簇也含一条（priority/horizon 取自 OpportunityDecision）
+    title: str
+    priority: Priority
+    horizon: Horizon
+    one_line_reason: str
+    is_focus: bool = False
 
 class SolutionSpec(BaseModel):       # M10
     requirement_id: str
@@ -373,13 +386,19 @@ class EvoPMState(TypedDict, total=False):
     focus_candidate: RequirementCandidate
     enrich_rounds: int               # 初始 0，enrich 后 +1，上限 1
     # 决策与执行
-    opportunity: OpportunityDecision
+    opportunity: OpportunityDecision     # 焦点簇精评
+    roadmap: list[RoadmapEntry]          # 全部簇（含焦点）的 Now/Next/Later，opportunity 节点一并产出
     solution: SolutionSpec
     code_impact: CodeImpactMap
     execution: ExecutionProposal
     # 治理
     critic_review: CriticReview
     redo_rounds: int                 # 初始 0，回炉后 +1，上限 1
+    clarify_rounds: int              # interrupt② 人工澄清轮次，初始 0，上限 1（超限降级 ROUTE_SUPPORT 出报告）
+    more_evidence_rounds: int        # 评审「补充证据」轮次，初始 0，上限 1
+    research_reentry: bool           # 评审后补证据重入调研的标志（路由用，见 §3.2），初始 False
+    _reentry_target: str             # "competitor"|"tech"，human_review 节点设置，route_review 读取
+    llm_call_count: int              # 仅展示用：report 节点从 llm.get_budget_used() 写入（真正的硬上限在 llm.py 模块级计数器，见 §11.1）
     human_decisions: list[HumanDecision]
     # 输出
     report_paths: list[str]
@@ -398,8 +417,13 @@ NODES = ["intake", "discovery", "select_cluster",
 START → intake → discovery → select_cluster
 select_cluster → competitor_research      # fan-out
 select_cluster → tech_research            # fan-out
-competitor_research → quality_gate        # fan-in（LangGraph superstep 自动等待）
-tech_research → quality_gate
+
+# 条件边 0：调研出边（fan-in / 评审补证据重入，二选一）
+# 首轮两节点同 superstep 完成后自动 fan-in 到 quality_gate；
+# 评审「补充证据」重入时（research_reentry=True）只重跑被点名的调研节点，
+# 完成后直接回 critic 复审 → human_review，绝不重跑 quality_gate→engineering 主链。
+def route_research_out(state) -> Literal["quality_gate", "critic"]:
+    return "critic" if state.get("research_reentry") else "quality_gate"
 
 # 条件边 1：门禁
 def route_gate(state) -> Literal["enrich", "clarify_human", "opportunity", "report"]:
@@ -407,24 +431,40 @@ def route_gate(state) -> Literal["enrich", "clarify_human", "opportunity", "repo
     if gate == GateStatus.PASS:          return "opportunity"
     if gate == GateStatus.ROUTE_SUPPORT: return "report"        # 转文档客服，直接出报告
     if state.get("enrich_rounds", 0) == 0: return "enrich"
+    if state.get("clarify_rounds", 0) >= 1: return "report"     # 防人工澄清死循环：1 次澄清后仍不达标即降级出报告
     return "clarify_human"
 enrich → quality_gate                     # 补全后重评
-clarify_human → quality_gate              # 人工补充后重评（resume 注入补充文本）
+clarify_human → quality_gate              # 人工补充后重评（resume 注入补充文本，clarify_rounds += 1）
 
 opportunity → solution_design → engineering → critic
 
-# 条件边 2：Critic 回炉
-def route_critic(state) -> str:           # 返回节点名或 "human_review"
+# 条件边 2：Critic 回炉（router 只读；redo_rounds 由 critic 节点自增——见下）
+def route_critic(state) -> str:
     cr = state["critic_review"]
-    if cr.redo_target and state.get("redo_rounds", 0) == 0:
-        return cr.redo_target             # ∈ {"quality_gate","opportunity","solution_design","engineering"}
-    return "human_review"
+    if state.get("research_reentry"):     # 补证据重入后的复审：只更新标注，直接交人工
+        return "human_review"
+    return cr.redo_target or "human_review"   # critic 节点已保证：仅在 redo_rounds<1 时才设 redo_target
+# ↑ 计数所有权：critic 节点发现严重问题且 state.redo_rounds<1 时，输出里设 redo_target
+#   并 redo_rounds=1；否则 redo_target=None。这样 router 保持纯只读，且天然限一轮。
 
-# 条件边 3：评审后的补证据
+# 条件边 3：评审后的补证据（router 只读；标志由 human_review 节点设置——见下）
 def route_review(state) -> Literal["competitor_research", "tech_research", "report"]:
-    # 若最后一批 human_decisions 中存在 MORE_EVIDENCE → 路由回对应调研节点，否则 report
+    if state.get("research_reentry"):     # human_review 节点已据 decisions 设好此标志
+        # human_review 已把待补证据的 item_ref 暂存到 state（cf-*/tf-* 决定去向）
+        return "competitor_research" if state["_reentry_target"] == "competitor" else "tech_research"
+    return "report"
+# ↑ 计数所有权：human_review 节点处理 decisions，若含 MORE_EVIDENCE 且 more_evidence_rounds<1，
+#   则置 research_reentry=True、more_evidence_rounds=1、_reentry_target=("competitor"|"tech")；否则 research_reentry=False。
 report → END
 ```
+
+**集成接线要点（WT-7 必读，最易出错处）**：
+- 两个 research 节点各自挂 `add_conditional_edges(node, route_research_out, {"quality_gate":"quality_gate","critic":"critic"})`。
+- **首轮 fan-in**：select_cluster 在同一 superstep 并行派发两个 research 节点；二者均返回 `"quality_gate"`，LangGraph 在下一 superstep 把 quality_gate 去重为**一个**任务执行（标准 fan-in），不会跑两次。quality_gate 读取时 competitor_findings 与 tech_findings 均已就位。
+- **enrich/clarify 重入 quality_gate**：此时只有单个前驱在活跃 superstep，quality_gate 正常单次执行；LangGraph 不会阻塞等待未激活的 research 分支。
+- **补证据重入**：route_review 只派发**一个** research 节点，research_reentry=True 使 route_research_out 返回 `"critic"`，单路径回 critic→human_review，**绝不重入 quality_gate→…→engineering 主链**（避免重算已确认结论 + 触发预算）。
+- 编译：`graph.compile(checkpointer=MemorySaver())`；调用必传 `config={"recursion_limit":50,"configurable":{"thread_id":"evopm-demo"}}`。
+- 各计数器（enrich_rounds 等）的 `+=1` 必须在**节点函数体内**完成并返回到 state；路由函数纯只读。
 
 ### 3.3 interrupt 协议（hitl.py 负责 CLI 渲染与输入解析）
 
@@ -460,10 +500,10 @@ class BaseAgent:
 | ResearchAgent(mode=tech) | tech_research | selected cluster, tech_topics | tech_findings | `TechOutput(findings=...)` | 同上；必须解释 fit_reason；防技术热点伪需求（不匹配的标 unsuitable） |
 | RequirementAgent.draft_and_score | quality_gate | cluster + 两类 findings (+人工补充文本) | focus_candidate（含 quality） | `RequirementCandidate` | 10 维各给 0-100+锚点理由；缺验收标准/边界 → 列入 missing_info |
 | RequirementAgent.enrich | enrich | focus_candidate + findings | focus_candidate（补全后） | `RequirementCandidate` | 只允许基于给定 findings 补全 acceptance_criteria/non_goals/boundary；补全内容 evidence_refs 标注来源 id |
-| StrategyAgent.score | opportunity | focus_candidate, findings, product_context | opportunity | `OpportunityDecision` | 10 维评分；权重由代码计算 total；优先级建议须给 rationale + 证据引用 |
+| StrategyAgent.score | opportunity | focus_candidate, **全部 clusters**, findings, product_context | opportunity + roadmap | `OpportunityOutput(decision=OpportunityDecision, roadmap=list[RoadmapEntry])` | 焦点簇 10 维精评（权重由代码算 total）；其余簇一次性粗评出 priority/horizon；roadmap 含全部簇（焦点 is_focus=True）；DUPLICATE 簇强制 Duplicate 不入 Now/Next |
 | StrategyAgent.design | solution_design | focus_candidate, opportunity, findings | solution | `SolutionSpec` | 4 角色 role_notes 必填；每条验收标准绑证据 |
 | EngineeringAgent | engineering | solution, repo_map, core_modules | code_impact + execution | `EngineeringOutput(impact=..., execution=...)` | 只基于 repo_map 推断；目录中不存在的模块标 uncertain；**不输出任何代码 diff**；gate≠PASS 时直接返回 blocked=True |
-| CriticAgent | critic | 全 state 摘要（代码组装） | critic_review | `CriticReview` | 对抗性：检查 evidence_refs 是否真实支撑结论；宁可多标不确定；mock 来源标"来源有限"；决定是否 redo_target |
+| CriticAgent | critic | 全 state 摘要（代码组装）+ 当前 redo_rounds | critic_review (+ redo_rounds) | `CriticReview` | 对抗性：检查 evidence_refs 是否真实支撑结论；宁可多标不确定；mock 来源标"来源有限"。**回炉所有权**：仅当发现严重问题且 redo_rounds<1 时设 redo_target 并令节点把 redo_rounds 置 1；否则 redo_target=None（保证最多一轮，router 只读） |
 
 **证据闭包校验（代码层，agents/base.py 提供）**：每个节点输出后，校验输出中所有 evidence_refs/signal_ids ∈ 上游已存在 id 集合；非法引用剔除并记录到日志，剔除记录作为 Critic 输入之一。
 
@@ -521,7 +561,7 @@ def risk_tier(item: CodeImpactItem, core_modules: list[str]) -> RiskTier:
 | 门禁 | ROUTE_SUPPORT → 跳过执行链直接出报告 | 报告「转文档/客服」 |
 | 优先级 | P2/P3/Support/Research/Duplicate → 不进 engineering（demo 只深挖选中簇，其余簇在 opportunity 节点一并粗评后分流） | 报告 Now/Next/Later |
 
-注：opportunity 节点除了对 focus_candidate 精评，还对未选中的簇做粗评（一次调用），保证路线图有 3 簇分布。
+注：opportunity 节点一次调用同时产出 focus 的 `OpportunityDecision`（精评）和覆盖**全部簇**的 `list[RoadmapEntry]`（焦点簇 + 未选中簇粗评），写入 state.opportunity 与 state.roadmap；report 的 Now/Next/Later 只读 roadmap，保证 3 簇分布。
 
 ---
 
@@ -536,9 +576,22 @@ def structured_call(schema: type[BaseModel], system: str, user: str,
                     model: str | None = None, use_cache: bool = True) -> BaseModel:
     # 1) replay/缓存：key = sha256(model+system+user)，存 runs/.cache/{key}.json
     #    run_mode=replay 时缓存 miss 直接抛错（保证离线确定性）
-    # 2) llm.with_structured_output(schema, method="function_calling")  ← 禁用 json_schema
-    # 3) 重试：429/5xx/超时 → 指数退避 3 次（1s/4s/16s）；Pydantic 校验失败 → 带错误信息重试 1 次
-    # 4) 成功后写缓存
+    #    缓存文件 json 损坏 → live 当 miss 重新调用并覆盖；replay 报错
+    # 2) llm.with_structured_output(schema, method="function_calling", include_raw=True)
+    #    ← 禁用 json_schema；include_raw 用于区分「无 tool call」和「校验失败」
+    # 3) 单次请求 timeout=120s，SDK 自身 max_retries=0（重试统一由本函数控制）
+    # 4) 重试矩阵：
+    #    - 429/5xx/网络超时 → 指数退避 3 次（1s/4s/16s）
+    #    - Pydantic 校验失败 / 模型未返回 tool call（返回纯文本）→ 把错误信息+原始输出
+    #      附到 user 末尾重试 1 次
+    #    - 重试穷尽 → 抛 LLMCallFailed（fail-fast，见 §11.2，不静默降级）
+    # 5) 预算：llm.py 维护模块级计数器；每次「真实」调用（缓存命中不计）前 +1，
+    #    超过 30 → 抛 LLMBudgetExceeded。CLI 在每次 run 开始调 reset_budget()。
+    #    不通过 state 线程传递（structured_call 看不到 state）。
+    # 6) 成功后写缓存
+
+def reset_budget() -> None: ...          # CLI run 入口调用，归零模块级计数器
+def get_budget_used() -> int: ...        # report 节点读取，写入 state.llm_call_count 仅供展示
 
 def web_search_call(query: str, count: int = 5) -> list[SearchResult]:
     # SearchResult: {title, url, snippet, publish_date}
@@ -572,10 +625,10 @@ opportunity_weights: {pain_frequency: 1.2, severity: 1.2, cost: 0.8}
 core_modules: [rag/nlp, deepdoc/parser, rag/svr]
 ```
 
-### feedback.csv（表头固定）
+### feedback.csv（表头固定，**无 id 列**——id 由 intake 代码分配 sig-NNN）
 ```csv
-id,created_at,author_type,text
-fb-01,2026-05-02,user,"上传一个 80MB 的 PDF 解析了两小时还在转圈，也不知道是卡了还是在跑"
+created_at,author_type,text
+2026-05-02,user,"上传一个 80MB 的 PDF 解析了两小时还在转圈，也不知道是卡了还是在跑"
 ```
 20 条构成：≥6 条指向「解析失败/状态不可见」（最大簇）、4–5 条检索/引用质量、3–4 条上传失败、2–3 条情绪/误用（漏斗样本）、1–2 条与历史需求重复。
 
@@ -638,3 +691,72 @@ evopm  # 无参 = run --data data/demo_kb
 1. `test_replay_e2e`：预置缓存 fixture，`run_mode=replay` + 自动 resume（选簇=最大簇、评审=全接受），断言：4 份报告生成、focus_candidate.quality.round==2 且 total 提升、execution.blocked==False、所有 evidence_refs 闭包合法。
 2. `test_gate_rule`：decide_gate 单测（pass/needs_enrich/route_support 三分支）。
 3. `test_risk_tier`：核心模块前缀命中 → HIGH。
+4. `test_loop_caps`：构造 enrich 始终不达标的输入，断言 clarify_rounds 触顶后路由到 report 而非死循环；redo_target 触发后 redo_rounds 触顶不再回炉。
+5. `test_degrade`：mock `WebSearchUnavailable` / `GithubUnavailable`，断言对应节点降级本地材料且 source 标 `mock://`，全链不中断。
+
+---
+
+## 11. 执行边界与容错（所有节点共同遵守）
+
+本节是合同的一部分——规定 LangGraph 执行过程中的轮次上限、上下文传递、工具调用失败与降级策略。**节点实现必须遵守，集成（WT-7）按此校验。**
+
+### 11.1 轮次与调用上限（硬性，防失控）
+
+| 计数器 | state key | 上限 | 触顶行为 |
+|---|---|---|---|
+| 质量门禁自动补全 | enrich_rounds | 1 | 转 clarify_human |
+| 人工澄清 | clarify_rounds | 1 | route_gate 降级 → report（ROUTE_SUPPORT 语义） |
+| Critic 回炉 | redo_rounds | 1 | 不再回炉 → human_review |
+| 评审补充证据 | more_evidence_rounds | 1 | route_review → report |
+| 全局 LLM 调用 | llm.py 模块级计数器 | 30 | structured_call 抛 `LLMBudgetExceeded`，CLI 顶层捕获→带半成品 state 进 report 并标注「因调用预算中止」 |
+| LangGraph recursion_limit | （编译参数）| 50 | 兜底防环；正常路径远低于此 |
+
+- 正常 mock 全链 LLM 调用约 10–12 次，30 是安全冗余上限。
+- `graph.invoke/stream` 必须传 `config={"recursion_limit": 50, "configurable": {"thread_id": "evopm-demo"}}`。
+- 所有计数器在节点内 `+= 1` 后写回 state；条件路由函数只读不写。
+
+### 11.2 失败策略：内部 fail-fast，外部可降级
+
+明确区分两类失败，禁止混用：
+
+- **LLM 结构化调用失败**（重试穷尽后）→ `LLMCallFailed`，**fail-fast 抛出，不静默兜空对象**。理由：半成品 schema 流向下游会污染证据链且难排查；宁可整条 run 失败并打印是哪个节点哪个 schema。CLI 顶层捕获后给出可读错误 + 提示 `--replay`。
+- **外部数据源失败**（GitHub API / web_search）→ **自动降级 mock**，不中断流程：
+  - `GithubUnavailable`（intake 节点捕获）→ 读 `issues_mock.json`，日志 WARN，报告「数据来源」标注「issues 来自 mock」。
+  - `WebSearchUnavailable`（research 节点捕获）→ 读 `competitors/*`、`tech_notes/*`，finding.source_url 前缀 `mock://`，evidence_strength 不得高于 `moderate`。
+  - `--mock` 模式直接走降级路径，不尝试真实调用。
+
+降级是「合同行为」：每个外部调用点都必须实现，缺失视为未完成验收。
+
+### 11.3 节点间上下文传递（LangGraph，非长对话）
+
+本系统**不维护跨节点的对话历史**——每个 Agent 是一次性 `structured_call(system, user)`，user 由节点代码从 state 现场拼装，调用完即弃。这样做的原因与约束：
+
+- **避免上下文膨胀**：GLM 200K 上下文足够，但喂全 state 会稀释指令并增加成本/幻觉。节点只传**本步所需的最小切片**（见下表），不传无关产物。
+- **每个 Agent 只见它该见的**：
+
+  | 节点 | 注入 user 的内容（最小集） | 显式不注入 |
+  |---|---|---|
+  | intake | product_context（name/module/stage）+ 原始信号行 | 任何下游产物 |
+  | discovery | 可行动 signals（id+text+category）+ existing_requirements | 竞品/技术/代码 |
+  | research(竞品/技术) | 选中 cluster + 对应竞品/关键词 + 搜索结果或 mock 材料 | 其他簇、质量评分 |
+  | requirement | 选中 cluster + 两类 findings（精简）+（enrich 时）现有草稿 + 人工补充文本 | repo_map、机会权重 |
+  | strategy.score | focus_candidate（标题+痛点+quality.total）+ findings 摘要 + 权重语境 | 完整 impl 细节 |
+  | strategy.design | focus_candidate + opportunity + findings | 其他簇 |
+  | engineering | solution + repo_map + core_modules | 原始反馈全文 |
+  | critic | 代码组装的**结论清单 + 各自 evidence_refs + 闭包 violations**（不是全文） | — |
+
+- **大文本裁剪**：注入信号/issue 正文时单条裁剪到 ≤800 字符；repo_map 全文注入（已是精简目录树，约 1–2K）；findings 注入时省略 source 原文只留结论+强度。
+- **证据靠 id 不靠原文**：下游节点引用上游用 id，不复制原文；原文只在 report 渲染证据卡时按 id 回查一次。
+
+### 11.4 工具调用（web_search）失败的细处理
+
+- web_search 是 research 节点**内部**的一次工具调用，不是 LangGraph 工具节点；失败在节点内捕获，不冒泡为图级错误。
+- 单个竞品/单个关键词搜索失败 → 只对该项降级 mock，其余项照常（不因一项失败整节点降级）。
+- 搜索成功但结果为空 → 等同 `WebSearchUnavailable` 走降级。
+- web_search 不计入 llm_call_count（它是搜索计费，非生成调用），但受 research 节点内 ≤8 次搜索的软上限约束。
+
+### 11.5 interrupt 中断与恢复的边界
+
+- 全流程在**单进程内**用 `graph.stream` + `MemorySaver` 完成，进程不退出即不丢 checkpoint；不做跨进程持久化（黑客松不需要）。
+- `--replay` + 自动 resume 模式下，三个 interrupt 用预设决策（select=最大簇、clarify=force_pass、review=全 accept）自动应答，供 smoke test 和断网演示。
+- resume 值 schema 非法（如 cluster_id 不存在）→ hitl 层重新提示，不进入图。

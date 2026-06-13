@@ -89,8 +89,8 @@
 - 验收：fixture 测试——enrich 后 acceptance_criteria ≥3 条且各有 evidence_refs；第二轮 total > 第一轮 total ≥15 分；gate=PASS。**这是 demo 高光，验收最严。**
 
 ### T3.3 StrategyAgent.score + prompt ⏱1.5h
-- 范围：`agents/strategy.py` + `prompts/opportunity.md`。focus 精评 10 维 + 未选中簇粗评（一次调用）；total 由代码加权；7 级优先级 + Horizon + 特殊类型；DUPLICATE 簇强制 Duplicate。
-- 验收：fixture——focus 簇得 P0/P1；重复簇=Duplicate；3 簇覆盖 Now/Next/Later 至少两档。
+- 范围：`agents/strategy.py` + `prompts/opportunity.md`。**一次调用同时产出** focus 的 `OpportunityDecision`（10 维精评，total 由代码加权）和覆盖**全部簇**的 `list[RoadmapEntry]`（焦点 is_focus=True + 未选中簇粗评 priority/horizon）；写 state.opportunity + state.roadmap；7 级优先级 + Horizon + 特殊类型；DUPLICATE 簇强制 Duplicate。
+- 验收：fixture——focus 簇得 P0/P1；重复簇=Duplicate；roadmap 含全部簇且 3 簇覆盖 Now/Next/Later 至少两档。
 
 ### T3.4 StrategyAgent.design + prompt ⏱1.5h
 - 范围：`prompts/solution.md` + design 方法 → SolutionSpec（4 角色 role_notes 必填、验收标准绑证据、异常/测试场景）。
@@ -105,8 +105,8 @@
 - 验收：fixture——影响面 ≥4 个模块且三档至少出现两档；命中 core_modules 的项 risk_tier=HIGH 并进 human_confirmation_needed；impl_plan 每步有 verify；输出文本不含 ``` diff 代码块。
 
 ### T4.2 CriticAgent + prompt ⏱2h
-- 范围：`agents/critic.py` + `prompts/critic.md`。输入代码组装的全 state 摘要（含闭包校验 violations）→ CriticReview（5 档证据强度/overreach/降权/pending_confirmations/redo_target）。
-- 验收：fixture——对一条故意无证据的结论标 inference_only + overreach；mock 来源的 finding 被标注来源有限；高风险影响项全部进 pending_confirmations。
+- 范围：`agents/critic.py` + `prompts/critic.md`。输入代码组装的全 state 摘要（含闭包校验 violations）+ 当前 redo_rounds → CriticReview（5 档证据强度/overreach/降权/pending_confirmations/redo_target）。**回炉计数所有权（spec §3.2/§11.1）**：仅当发现严重问题且 redo_rounds<1 时设 redo_target 并令节点输出把 redo_rounds 置 1；否则 redo_target=None（router 只读，天然限一轮）。
+- 验收：fixture——对一条故意无证据的结论标 inference_only + overreach；mock 来源的 finding 被标注来源有限；高风险影响项全部进 pending_confirmations；redo_rounds 已为 1 时 redo_target 必为 None。
 
 ---
 
@@ -126,6 +126,7 @@
 
 ### T6.1 hitl.py（3 个 interrupt 的 CLI 交互） ⏱2h
 - 范围：spec §3.3 协议——payload→rich 表格渲染、input 解析→resume 值；final_review 支持 5 操作 + 低风险折叠 + `a` 批量接受；所有操作生成 HumanDecision（含 reason）。
+- 注：**human_review 节点（在 graph.py，非 hitl.py）** 负责消费 decisions 并设置补证据标志（spec §3.2）：含 MORE_EVIDENCE 且 more_evidence_rounds<1 → research_reentry=True、more_evidence_rounds=1、_reentry_target=competitor|tech；否则 research_reentry=False。hitl.py 只负责渲染与解析，不碰路由状态。
 - 验收：单测：模拟 payload→构造 resume dict 正确；非法输入重新提示。
 
 ### T6.2 cli.py ⏱1.5h
@@ -137,8 +138,8 @@
 ## WT-7 integration（⛔ 依赖 WT-1…6 全部合入）
 
 ### T7.1 graph.py 组装 ⏱2h
-- 范围：spec §3.2 全部节点/边/三个条件路由/MemorySaver/interrupt 接线；enrich_rounds、redo_rounds 计数。
-- 验收：`evopm run --mock --model glm-4.7-flash` 全链跑通，3 个 interrupt 可交互。
+- 范围：spec §3.2 全部节点/边/四个条件路由（route_research_out/route_gate/route_critic/route_review）/MemorySaver/interrupt 接线；**严格按 §3.2「集成接线要点」处理 fan-in 与补证据重入**；计数器自增所有权（enrich→enrich 节点、clarify→clarify_human 节点、redo→critic 节点、more_evidence→human_review 节点；路由函数纯只读）；编译传 `recursion_limit=50` + `thread_id`。
+- 验收：`evopm run --mock --model glm-4.7-flash` 全链跑通，3 个 interrupt 可交互；首轮两调研节点 fan-in 后 quality_gate 只执行一次（日志验证）。
 
 ### T7.2 门禁剧情校准 ⏱1.5h
 - 范围：调 feedback.csv 措辞 / 评分锚点 prompt，使初评 55–62、enrich 后 ≥80。
@@ -149,8 +150,8 @@
 - 验收：live 运行产出含真实 issue URL 和真实搜索来源的报告。
 
 ### T7.4 smoke test + replay fixture ⏱1.5h
-- 范围：跑一次成功的 live/mock 运行落缓存 → `tests/test_smoke.py`（spec §10）：replay 模式 + 自动 resume，断言报告/质量提升/证据闭包。
-- 验收：断网（或清 API key）状态 `pytest tests/test_smoke.py` 通过。
+- 范围：跑一次成功的 live/mock 运行落缓存 → `tests/test_smoke.py`（spec §10 全部 5 项）：replay e2e + gate 规则 + risk_tier + **test_loop_caps（轮次触顶不死循环）** + **test_degrade（外部源失败降级 mock 不中断）**。
+- 验收：断网（或清 API key）状态 `pytest tests/` 通过；test_loop_caps 验证 clarify/redo/more_evidence 触顶后正确收敛到 report/human_review。
 
 ### T7.5 演示彩排 ⏱1.5h
 - 范围：README 快速开始 + 演示话术（十步主线）+ 彩排 ≥3 次掐表。
