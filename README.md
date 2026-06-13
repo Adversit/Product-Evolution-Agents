@@ -40,21 +40,31 @@ cp .env.example .env         # 填入 ZHIPUAI_API_KEY（GITHUB_TOKEN 可选）
 
 ## 使用
 
-> CLI（`evopm`）在集成阶段（WT-6/WT-7）落地；当前仓库已可运行基础设施与规则单测。
+全链已实现：14 节点的 LangGraph 编排（信号导入 → 过滤聚类 → 竞品/技术调研 → 质量门禁 → 机会评分 → 执行建议 → 对抗审查 → 分级人工介入 → 报告），含 3 个人工确认断点与 mock/replay 降级兜底。
 
 ```bash
-# 运行规则单测 + replay 冒烟
+# 运行测试（规则单测 + 证据闭包 + 降级 + 渲染 + graph 冒烟）
 pytest tests/
 
-# 全链运行（CLI 落地后生效）
 evopm run --mock                 # mock 模式：跳过 GitHub API 与 web_search，全用本地材料
 evopm run --replay               # 离线重放：LLM 全走缓存（断网演示兜底）
 evopm run                        # live 模式：真实 GitHub API + web_search
 evopm run --model glm-4.7-flash  # 指定开发期免费模型
+evopm run --data data/demo_kb    # 指定数据目录
 evopm init                       # 交互式问答生成 data/<name>/product.yaml
 ```
 
+> **运行真实链路需要 `ZHIPUAI_API_KEY`**（`--mock` 也要，只是跳过 GitHub/web_search）。无 key 时 `pytest tests/` 仍全绿——需要真实 LLM 的 fixture 会自动 skip。
+
 开发与测试遵循 **先 mock 跑通、再接真实 API** 的顺序：先用 `data/demo_kb/` 的本地 mock 数据 + `--mock` + `glm-4.7-flash` 跑通全链，稳定后再逐项接真实 GitHub API → web_search → `glm-5.1`。
+
+## 测试
+
+```bash
+pytest tests/        # 本机若禁访问全局 temp，可加 --basetemp=runs/_pytmp
+```
+
+无 key 时：规则、证据闭包、LLM 重试/缓存/预算、调研降级、报告渲染、HITL 解析、graph 编译与 `test_loop_caps`/`test_degrade` 均通过；需要真实 LLM 的 agent fixture 与 `test_replay_e2e` 自动 skip，放入 key 后即可解封运行。
 
 ## 文档
 
