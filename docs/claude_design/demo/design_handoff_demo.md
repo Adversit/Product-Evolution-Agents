@@ -1,7 +1,7 @@
 # Claude Design 交接包 ② — 过程演示 / 流水线透视台
 
-> 用法：把**本文件**拖给 Claude Design；同时附上 `docs/design_handoff_sample_state.json`（真实数据）。先做 Hero（实时流水线），满意后再扩展节点检视/计数栏。
-> 完整需求见 `docs/frontend_demo_ui.md`；事件/字段见 `docs/frontend_api.md` §3–§5。
+> 用法：把**本文件夹（`docs/claude_design/demo/`）内的全部文件**一起上传给 Claude Design——本简报 + `sample_state.json`（真实数据）。先做 Hero（实时流水线），满意后再扩展节点检视/计数栏。
+> 完整需求见仓库 `docs/frontend_demo_ui.md`；事件/字段见 `docs/frontend_api.md` §3–§5。
 
 ---
 

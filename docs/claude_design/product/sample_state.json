@@ -1,0 +1,1256 @@
+{
+  "run_mode": "replay",
+  "llm_call_count": 0,
+  "signals": [
+    {
+      "id": "sig-001",
+      "source_type": "csv_feedback",
+      "origin_url": "",
+      "author_type": "user",
+      "created_at": "2026-05-02",
+      "text": "上传一个 80MB 的 PDF 解析了两小时还在转圈，也不知道是卡了还是在跑",
+      "module_guess": "文档解析（大文件）",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-002",
+      "source_type": "csv_feedback",
+      "origin_url": "",
+      "author_type": "user",
+      "created_at": "2026-05-03",
+      "text": "文档解析一直显示解析中，过了一晚上还是没好，也没有任何报错",
+      "module_guess": "文档解析",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "insufficient",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": "能否提供文档类型、页数以及服务器配置（CPU/内存）信息？是否启用了 OCR 或 GraphRAG？"
+    },
+    {
+      "id": "sig-003",
+      "source_type": "csv_feedback",
+      "origin_url": "",
+      "author_type": "enterprise",
+      "created_at": "2026-05-04",
+      "text": "解析失败了但是页面没有任何提示，只能看到状态还是 pending，根本不知道发生了什么",
+      "module_guess": "文档解析错误反馈",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-004",
+      "source_type": "csv_feedback",
+      "origin_url": "",
+      "author_type": "user",
+      "created_at": "2026-05-05",
+      "text": "不知道解析进行到哪一步了，界面就一个转圈图标，体验很差",
+      "module_guess": "文档解析进度展示",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    }
+  ],
+  "existing_requirements": [
+    {
+      "id": "ex-01",
+      "title": "支持解析进度百分比展示",
+      "summary": "前端文档列表展示解析进度条，按已处理 chunk / 总量给出百分比，已列入 roadmap，尚未开发。",
+      "status": "in_roadmap"
+    },
+    {
+      "id": "ex-02",
+      "title": "解析失败重试与错误详情",
+      "summary": "解析任务失败时记录并展示失败原因（格式不支持 / OOM / 超时等），支持单任务重试；目前失败信息缺失，属已知问题。",
+      "status": "known_issue"
+    },
+    {
+      "id": "ex-03",
+      "title": "混合检索召回质量优化",
+      "summary": "优化关键词 + 向量混合检索打分与 rerank，提升召回相关性，针对多知识库场景调权重。",
+      "status": "in_roadmap"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "clu-01",
+      "title": "解析任务频繁卡死/失败，GraphRAG 与大文件场景尤甚",
+      "summary": "用户在多种场景遭遇解析卡死或失败：大文件（80–100MB+）长时间转圈甚至直接失败、GraphRAG 启用后任务队列堆积卡死、docx 卡在 0%、PDF 解析后长期 pending；且失败后缺乏错误原因反馈，只能反复重试或重新上传，严重影响日常交付。",
+      "signal_ids": [
+        "sig-001",
+        "sig-003",
+        "sig-005",
+        "sig-006",
+        "sig-007",
+        "sig-013",
+        "sig-014",
+        "sig-021",
+        "sig-022",
+        "sig-023"
+      ],
+      "categories": [
+        "stability",
+        "bug",
+        "ux"
+      ],
+      "severity": "critical",
+      "frequency": 10,
+      "status": "known",
+      "candidate_title": "修复解析卡死/失败问题——GraphRAG 任务队列与大文件解析优先",
+      "user_story_draft": "作为文档管理者，我希望解析任务能够稳定完成或在失败时给出明确的错误原因与可恢复操作，以便我无需反复重试和重新上传大文件。",
+      "duplicate_of_existing": null,
+      "dedup_reason": ""
+    },
+    {
+      "id": "clu-02",
+      "title": "缺少解析进度条展示与批量上传失败反馈",
+      "summary": "用户无法看到解析进行到哪一步、进度百分比或预计完成时间，界面仅有转圈图标；批量上传时也无法得知哪些文件解析失败，体验差且影响排障效率。",
+      "signal_ids": [
+        "sig-004",
+        "sig-015",
+        "sig-016",
+        "sig-017"
+      ],
+      "categories": [
+        "missing_feature",
+        "ux"
+      ],
+      "severity": "high",
+      "frequency": 4,
+      "status": "duplicate",
+      "candidate_title": "文档列表展示解析进度条与批量上传分项失败标记",
+      "user_story_draft": "作为文档管理者，我希望在文档列表中看到每个文件的解析进度百分比以及失败文件的具体标记，以便我了解整体解析进展并及时重试失败项。",
+      "duplicate_of_existing": "ex-01",
+      "dedup_reason": "本簇核心诉求（解析进度百分比 / 进度条展示）与 ex-01「支持解析进度百分比展示」(status=in_roadmap) 实质相同。其中 sig-015（批量上传失败不可见）与 ex-02「解析失败重试与错误详情」部分重叠，建议在 ex-01 开发时一并覆盖批量失败标记。"
+    },
+    {
+      "id": "clu-03",
+      "title": "多知识库检索召回下降、引用溯源不准、表格解析退化",
+      "summary": "跨多知识库检索时召回质量明显下降并偶发 InfinityException(3052)；回答引用标注位置与原文不匹配、溯源不可信；表格解析准确率较 0.23.1 版本退化（单元格合并/丢失、数据值错误）。三者共同导致回答结果不可信、无法向客户交付。",
+      "signal_ids": [
+        "sig-009",
+        "sig-010",
+        "sig-011",
+        "sig-012",
+        "sig-024",
+        "sig-025",
+        "sig-026",
+        "sig-027"
+      ],
+      "categories": [
+        "bug"
+      ],
+      "severity": "high",
+      "frequency": 8,
+      "status": "known",
+      "candidate_title": "优化多知识库检索召回、引用溯源准确性与表格解析精度",
+      "user_story_draft": "作为知识库使用者，我希望多知识库检索能准确召回关键文档、引用能精确对应原文位置且表格数据解析正确，以便我可以信任回答结果并向客户交付。",
+      "duplicate_of_existing": null,
+      "dedup_reason": ""
+    }
+  ],
+  "selected_cluster_id": "clu-01",
+  "competitor_findings": [
+    {
+      "id": "cf-01",
+      "competitor": "Dify",
+      "research_question": "竞品是否提供解析进度的实时可视化（如进度百分比、当前阶段提示）以及解析失败后的用户侧反馈（错误码、原因描述、一键重试）？",
+      "has_solved": true,
+      "conclusion": "Dify 的文档列表提供「处理中 / 可用 / 错误」三种状态标签，长文档批量处理时有进度提示，失败文档标红并支持重新处理。但材料未提及细粒度的步骤级进度（如'正在提取文本→正在分段→正在嵌入'的阶段提示）或具体错误码/错误原因描述，更多是文件级的状态展示。",
+      "verdict": "adopt",
+      "gap_description": "RAGFlow 在解析状态展示和失败反馈方面不如 Dify 直观，缺乏面向用户的清晰状态标签和一键重试入口。但 Dify 也仅做到文件级状态，步骤级进度双方均有缺口。",
+      "implication": "Dify 的三态标签（处理中/可用/错误）+ 标红 + 重新处理是轻量但用户体感好的设计，RAGFlow 应至少对标此基础层：确保每个文档有明确的状态展示、失败时给出可操作的重新处理入口。步骤级进度可视化则是双方共同缺口，可作为 RAGFlow 的差异化突破点。",
+      "source_url": "mock://dify.md",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-02",
+      "competitor": "Dify",
+      "research_question": "主流 RAG 竞品在处理 80–100MB+ 大文件解析时，是否有文件大小上限、分片上传、流式解析等机制来避免卡死或 OOM？失败后是否给出明确的错误原因与重试策略？",
+      "has_solved": false,
+      "conclusion": "材料明确指出 Dify 在'超大文件或海量文档批处理时偶发处理缓慢、卡在处理中'，说明 Dify 同样面临大文件/批量场景的卡死问题。材料未提及 Dify 有文件大小上限、分片上传、流式解析或 OOM 防护机制，也未提及失败时给出具体错误原因。高质量索引（Q&A 模式、父子分段）还会显著增加 token 与时间成本，进…",
+      "verdict": "avoid",
+      "gap_description": "Dify 在大文件处理上与 RAGFlow 面临同类问题，不构成差异化优势。",
+      "implication": "大文件解析卡死是行业共性问题，Dify 尚未给出成熟方案，RAGFlow 不必跟随竞品做简单的状态展示修复，而应在大文件解析架构层面（如流式分块、内存控制、超时熔断）做差异化投入，这才是核心竞争壁垒。",
+      "source_url": "mock://dify.md",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-03",
+      "competitor": "Dify",
+      "research_question": "竞品在启用 GraphRAG / 知识图谱构建时，任务队列是如何调度的？是否有并发数控制、优先级队列、超时熔断、失败隔离等机制来防止任务堆积卡死整个系统？",
+      "has_solved": null,
+      "conclusion": "提供的 Dify 调研材料完全未涉及 GraphRAG / 知识图谱构建功能或任务队列调度机制（并发控制、优先级队列、超时熔断、失败隔离等）。无法从材料判断 Dify 是否支持 GraphRAG，也无法判断其任务队列架构。",
+      "verdict": "watch",
+      "gap_description": "",
+      "implication": "Dify 材料未覆盖 GraphRAG 与任务队列调度，无法形成有效对标。RAGFlow 的 GraphRAG 卡死问题需要在自身架构层面做设计决策（如独立 worker 池、并发上限、失败隔离），而非参考 Dify 的做法。",
+      "source_url": "mock://dify.md",
+      "evidence_strength": "no_direct"
+    }
+  ],
+  "tech_findings": [
+    {
+      "id": "tf-01",
+      "topic": "stability",
+      "solution_name": "解析状态机 + 心跳超时检测机制",
+      "maturity": "reference",
+      "fit_reason": "调研问题 Q1/Q3 的核心方案：材料指出当前实现把多步解析（提取/OCR/分块/嵌入/索引）压缩成单一「解析中」态，无法区分「卡住」与「在跑」。引入分阶段状态枚举 + worker 心跳时间戳 + 超时阈值判定（超阈值无心跳→标记疑似卡住），可直接解决 GraphRAG 任务队列中 worker 崩溃后任务永久 pe…",
+      "cost_estimate": "medium — 主要改动在 task_executor 侧拆分解析阶段并写入心跳/进度，需扩展状态表数据模型，但不需要引入新中间件",
+      "risk": "心跳超时阈值需调参：过短会误杀正常大文件解析（OCR/嵌入阶段耗时长），过长则失去卡死检测意义；需按文档类型和文件大小设置动态阈值",
+      "source_url": "mock://tech_notes/*",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-02",
+      "topic": "stability",
+      "solution_name": "解析失败重试装饰器（指数退避 + 错误分类）",
+      "maturity": "reference",
+      "fit_reason": "直接解决 Q4「失败后用户无反馈、无自动重试」：材料提出对瞬时错误（网络抖动、依赖 5xx、超时）做有限次指数退避自动重试，对确定性错误（格式不支持、文件损坏）直接落 failed + 原因码。这对 GraphRAG 场景下因嵌入/向量库抖动导致的间歇性失败尤为有效，避免用户反复手动重试。",
+      "cost_estimate": "low — 核心是给解析任务包一层错误分类 + 退避重试装饰器，不涉及架构级改动",
+      "risk": "重试必须幂等：若之前的解析已部分写入分块/索引，重试会造成脏数据或重复记录；需先实现分块/索引的 upsert 或事务回滚机制作为前置条件",
+      "source_url": "mock://tech_notes/*",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-03",
+      "topic": "stability",
+      "solution_name": "结构化错误码 + 失败原因透传前端",
+      "maturity": "reference",
+      "fit_reason": "解决 Q4「错误链路断裂」：材料指出当前失败后不记录结构化原因，错误链路在「异常捕获→存储→前端展示」环节断裂。建议每次失败写入结构化错误（错误类型、阶段、message、可重试标志），前端展示原因并提供手动重试入口。这能让用户看到「OCR 超时」「格式不支持」等具体原因而非笼统的「解析失败」，大幅减少无效重试。",
+      "cost_estimate": "medium — 需扩展状态数据模型存错误详情字段，并贯通 task_executor→后端 API→前端展示全链路",
+      "risk": "错误分类体系需要设计完整，覆盖格式不支持、OCR 超时、OOM、依赖服务抖动等多类错误；分类不准会导致可重试错误被跳过或不可重试错误浪费重试资源",
+      "source_url": "mock://tech_notes/*",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-04",
+      "topic": "stability",
+      "solution_name": "分块预览解析作为大文件前置验证",
+      "maturity": "experimental",
+      "fit_reason": "对 Q2 大文件解析失败有间接缓解作用：材料提出在正式全量解析前对前若干页/前 N 个分块做预览解析（仅提取+分块，不做嵌入），可提前发现格式问题或解析器异常。对 80–100MB+ 大文件，预览解析若失败可避免浪费全量解析的资源投入，同时给用户提前调整参数的机会。但材料未直接讨论大文件场景的内存/超时处理，适用性需验…",
+      "cost_estimate": "medium — 需实现预览解析逻辑（截取部分内容做提取+分块）及前端交互，但复用现有提取/分块代码，不引入新依赖",
+      "risk": "预览解析成功不代表全量解析一定成功——大文件的 OOM 和超时问题可能在全量阶段才暴露；预览可能给用户虚假的安全感",
+      "source_url": "mock://tech_notes/*",
+      "evidence_strength": "weak"
+    }
+  ],
+  "focus_candidate": {
+    "id": "req-01",
+    "cluster_id": "clu-01",
+    "title": "解析任务稳定性修复——分阶段状态机、结构化错误透传与自动重试",
+    "background": "RAGFlow 用户在多种高频场景遭遇解析任务卡死或失败：80–100MB+ 大文件长时间转圈后直接失败（sig-001, sig-003）、GraphRAG 启用后任务队列堆积导致整体卡死（sig-013, sig-014）、docx 文件解析卡在 0%（sig-005）、PDF 解析完成后长期处于 pending …",
+    "target_users": [
+      "文档管理者 / 知识库管理员",
+      "使用 GraphRAG 的 RAG 应用开发者",
+      "处理大批量文档的企业级用户"
+    ],
+    "pain_point": "用户上传 80–100MB 的大文件后，解析任务经常长时间转圈甚至直接失败（sig-001, sig-003）；失败时没有任何错误原因提示，只看到笼统的「解析失败」，不知道是格式不支持、OCR 超时、还是内存不足。GraphRAG 场景更严重：启用后任务队列堆积、worker 崩溃，任务永久卡在 pending/0%（…",
+    "business_goal": "将解析任务成功率提升至 95% 以上（含大文件场景），消除 GraphRAG 任务队列卡死问题；使每个失败任务都能给出结构化错误原因与可操作建议（如「OCR 超时，请重试」「格式不支持，请转换」），降低用户因解析卡死导致的流失率和工单量。",
+    "scope": [
+      "解析流程分阶段拆分与状态枚举设计（uploaded→queued→extracting→ocr→chunking→embedding→indexing→done|failed），实现阶段级状态上报与持久化",
+      "Worker 心跳机制 + 动态超时阈值自动检测卡死（按文件大小/文档类型设置阈值），超时任务自动标记并触发重试或失败",
+      "结构化错误码体系（OOM/超时/格式不支持/依赖抖动等分类）+ 错误详情全链路透传（task_executor→后端 API→前端展示）",
+      "可重试 vs 不可重试错误分类 + 指数退避自动重试（含分块/索引幂等写入保证作为前置条件）",
+      "前端分阶段进度条（含已处理 chunk/总 chunk）+ 失败原因友好化展示 + 手动重试入口"
+    ],
+    "non_goals": [
+      "GraphRAG 完整幂等性设计（实体去重、关系合并）：成本评估为 high（tf-07, tf-23），且逻辑复杂度高，拆为独立前置任务先行解决，本期仅覆盖分块/索引的 upsert 幂等保证",
+      "分块预览解析（大文件冒烟测试）：方案尚处 experimental 阶段，对 80–100MB 文件的「轻量」假设未经验证（tf-04, tf-17, tf-24），推迟到稳定性修复完成后的后续迭代",
+      "RAG 检索质量优化（混合检索 BM25+向量、reranker、多知识库分数归一化）：与解析稳定性无关（tf-08, tf-12, tf-13），不在本期范围",
+      "可插拔/备用解析引擎集成（如 docx→PDF 转换再解析的自动 fallback）：cf-05 提供参考但优先级低于核心卡死修复，推迟到后续迭代"
+    ],
+    "boundary_conditions": [
+      "最大支持文件大小上限 200MB：超过此限制的文件在上传阶段即拒绝并给出明确错误提示，避免超大文件触发 OOM（tf-15, cf-02）",
+      "心跳超时阈值按文件大小与解析阶段动态设置：≤100MB 文件 extracting 阶段 10min、ocr 阶段 15min/批次、embedding 阶段 5min/500chunks；100–200MB 文件各阶段阈值翻倍；超过 2×阶段阈值无心跳则强制标记 error_type=worker_crash 并触发…",
+      "自动重试策略：最大重试 3 次，指数退避间隔 10s/30s/90s；确定性错误（格式不支持、文件损坏）直接落 failed 不消耗重试额度（tf-02, tf-21）",
+      "进度持久化写入策略：采用节流批量写入（每 500ms 或每处理 10 个 chunk 取其一更新，以先到者为准），避免大批量并发解析时数据库写入成为瓶颈（tf-20）",
+      "重试幂等保证：分块写入使用基于文档 hash+偏移量的稳定 chunk ID 进行 upsert；检测到某阶段部分写入残留时，重试前先清理该阶段旧数据，防止脏数据（tf-02, tf-07, tf-23）",
+      "前端进度推送默认采用轮询模式（间隔 ≤5s），SSE/WebSocket 推送作为后续优化项；现有架构约束下优先保证轮询方案可用（tf-09, tf-20）"
+    ],
+    "clarifications": [
+      "心跳超时阈值的具体数值策略（按文件大小分档 vs 按解析阶段分档）需在联调阶段与运维团队确认基线，本文给出的默认值为初始参考"
+    ],
+    "user_stories": [
+      {
+        "role": "文档管理者 / 知识库管理员",
+        "scenario": "上传 80–100MB 的大文件后发起解析任务",
+        "benefit": "无需反复重试和重新上传大文件，节省时间和带宽；失败时能针对性处理而非盲目猜测原因",
+        "story_text": "作为文档管理者，我希望解析任务能够稳定完成，或在失败时给出明确的错误原因（如 OCR 超时、格式不支持、内存不足）和可恢复操作建议，以便我无需反复重试和重新上传大文件。",
+        "evidence_refs": [
+          "sig-001",
+          "sig-003",
+          "sig-005",
+          "sig-006",
+          "sig-007",
+          "cf-01",
+          "cf-02",
+          "tf-03",
+          "tf-06",
+          "tf-10",
+          "tf-15"
+        ]
+      },
+      {
+        "role": "使用 GraphRAG 的 RAG 应用开发者",
+        "scenario": "启用 GraphRAG 后任务队列堆积、worker 崩溃导致任务永久卡在 pending",
+        "benefit": "单个 worker 崩溃不再导致整个队列停滞，GraphRAG 任务能自动恢复或快速失败并告知原因",
+        "story_text": "作为 GraphRAG 用户，我希望任务队列中的 worker 崩溃能被自动检测（心跳超时），瞬时失败能自动重试（指数退避），确定性失败能快速给出原因码，以便整个队列不会因单点故障永久停滞。",
+        "evidence_refs": [
+          "sig-013",
+          "sig-014",
+          "sig-021",
+          "sig-022",
+          "tf-01",
+          "tf-02",
+          "tf-07",
+          "tf-19",
+          "tf-21",
+          "tf-23"
+        ]
+      },
+      {
+        "role": "文档管理者 / 知识库管理员",
+        "scenario": "等待解析任务完成时无法判断任务是否真的在处理还是已经卡住",
+        "benefit": "能精确判断卡在哪个环节，减少等待焦虑，也可辅助排查问题",
+        "story_text": "作为文档管理者，我希望看到解析任务的分阶段进度（提取→OCR→分块→嵌入→索引，含已处理 chunk/总 chunk），以便我能判断任务是正常运行还是已经卡住，并预估完成时间。",
+        "evidence_refs": [
+          "sig-023",
+          "cf-07",
+          "tf-09",
+          "tf-16",
+          "tf-18",
+          "tf-20"
+        ]
+      }
+    ],
+    "acceptance_criteria": [
+      {
+        "text": "解析任务必须按 enumerable 阶段流转（uploaded→queued→extracting→ocr→chunking→embedding→indexing→done|failed），每个阶段切换时将当前阶段名、进度、心跳时间戳持久化到状态表；worker 崩溃后，心跳超时检测在 2×阶段阈值内将任务标记为 f…",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-013",
+          "sig-014",
+          "tf-05",
+          "tf-16",
+          "tf-18",
+          "tf-19"
+        ]
+      },
+      {
+        "text": "解析任务失败时，系统必须写入结构化错误记录（error_type/error_stage/error_message/retryable），至少覆盖 OOM、OCR 超时、格式不支持、依赖服务抖动四类错误分类；前端展示用户友好化文案并提供手动重试按钮，用户看到的错误原因不再是笼统的「解析失败」",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-001",
+          "sig-003",
+          "tf-03",
+          "tf-06",
+          "tf-10",
+          "tf-15",
+          "tf-22"
+        ]
+      },
+      {
+        "text": "瞬时错误（网络抖动、依赖 5xx、超时）触发自动重试（指数退避 10s/30s/90s，最多 3 次）；确定性错误（格式不支持、文件损坏）直接落 failed + 原因码，不消耗重试额度；验证方式：对每类错误构造测试用例，断言重试次数与最终状态符合预期",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-022",
+          "tf-02",
+          "tf-21"
+        ]
+      },
+      {
+        "text": "前端分阶段进度条展示当前阶段名 + 已处理 chunk/总 chunk，轮询间隔 ≤5s；用户可明确区分「正常处理中」与「卡住」两种状态；对于无法预估总 chunk 数的格式，进度条展示已完成阶段数/总阶段数作为降级展示",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-023",
+          "cf-07",
+          "tf-09",
+          "tf-20"
+        ]
+      },
+      {
+        "text": "【性能/非功能】心跳超时阈值按文件大小与解析阶段动态配置（≤100MB：extracting 10min/ocr 15min/embedding 5min per 500 chunks；100–200MB：各阶段阈值翻倍），心跳扫描任务频率 ≤60s，扫描期间对批量并发解析的数据库写入压力不超过基线 20%",
+        "type": "nonfunctional",
+        "evidence_refs": [
+          "tf-01",
+          "tf-19",
+          "tf-20"
+        ]
+      },
+      {
+        "text": "【幂等性/非功能】自动重试前，系统必须对上一阶段的残留分块/索引数据执行清理（基于稳定 chunk ID 的 upsert 或先删后建），验证方式：故意在 embedding 阶段中途触发重试，断言重试后向量索引中无重复 chunk 记录",
+        "type": "nonfunctional",
+        "evidence_refs": [
+          "tf-02",
+          "tf-07",
+          "tf-23"
+        ]
+      },
+      {
+        "text": "【可观测性/非功能】解析任务成功率（done/总任务数）在 7 天滚动窗口内 ≥95%（含 80–100MB 大文件场景）；失败任务中至少 90% 携带结构化错误分类，可从日志中按 error_type 聚合查询统计失败分布",
+        "type": "nonfunctional",
+        "evidence_refs": [
+          "sig-001",
+          "sig-003",
+          "cf-02",
+          "cf-06",
+          "tf-15",
+          "tf-22"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      "sig-001",
+      "sig-003",
+      "sig-005",
+      "sig-006",
+      "sig-007",
+      "sig-013",
+      "sig-014",
+      "sig-021",
+      "sig-022",
+      "sig-023",
+      "cf-01",
+      "cf-02",
+      "cf-04",
+      "cf-06",
+      "cf-07",
+      "tf-01",
+      "tf-02",
+      "tf-03",
+      "tf-05",
+      "tf-06",
+      "tf-07",
+      "tf-09",
+      "tf-10",
+      "tf-15",
+      "tf-16",
+      "tf-18",
+      "tf-19",
+      "tf-20",
+      "tf-21",
+      "tf-22",
+      "tf-23"
+    ],
+    "quality": {
+      "total": 86,
+      "dimensions": [
+        {
+          "name": "clarity",
+          "score": 88,
+          "rationale": "标题、背景、痛点、范围均清晰表述，根因分析（tf-05/tf-06）将多步骤压缩为单一态的问题链完整描述，业务目标可量化（≥95%成功率），目标用户与场景边界明确。"
+        },
+        {
+          "name": "completeness",
+          "score": 85,
+          "rationale": "所有必填字段已补齐：acceptance_criteria（7条含functional+nonfunctional）、non_goals（4条含GraphRAG幂等推迟依据）、boundary_conditions（6条含文件上限/超时/幂等/降级）。GraphRAG完整幂等性作为non_goal已说明拆分理由（tf-…"
+        },
+        {
+          "name": "testability",
+          "score": 86,
+          "rationale": "验收标准均含可测条件：状态流转断言、错误分类覆盖验证、重试次数与退避间隔精确值、心跳扫描频率≤60s、成功率7天窗口≥95%、幂等性无重复chunk断言。每条绑定上游证据，无空泛表述。"
+        },
+        {
+          "name": "acceptance_clarity",
+          "score": 85,
+          "rationale": "7条验收标准中4条functional+3条nonfunctional，每条含明确的pass/fail判定条件与验证方式（如「断言重试次数与最终状态符合预期」「无重复chunk记录」），并全部绑定evidence_refs（sig/cf/tf），可直接转化为测试用例。"
+        },
+        {
+          "name": "evidence_sufficiency",
+          "score": 88,
+          "rationale": "31条evidence_refs覆盖10个signals、8个competitor findings、16个tech findings，验收标准与边界条件均有上游证据支撑。核心方案（tf-01/tf-18/tf-19状态机+心跳）和风险项（tf-07/tf-23幂等）证据强度均为moderate，满足决策需求。"
+        },
+        {
+          "name": "scope_control",
+          "score": 84,
+          "rationale": "non_goals明确排除4项（GraphRAG完整幂等、分块预览、检索质量优化、备用解析引擎），每项引用tf/cf说明推迟理由。boundary_conditions用文件大小上限200MB和重试次数3次封顶防止范围蔓延。scope 5项与acceptance_criteria 7条一一对应。"
+        },
+        {
+          "name": "feasibility",
+          "score": 82,
+          "rationale": "核心方案（状态机tf-18/心跳tf-19/错误分类tf-21）均为reference成熟度、成本low-medium；high_risk的GraphRAG幂等（tf-23）已拆为non_goal。残留风险为心跳阈值调参（tf-01 risk）和前端进度推送机制选择，已通过boundary_conditions给出默认…"
+        },
+        {
+          "name": "consistency",
+          "score": 86,
+          "rationale": "scope、user_stories、acceptance_criteria三者对齐：状态机拆分对应scope①和AC①；错误透传对应scope③和AC②；自动重试对应scope④和AC③；进度条对应scope⑤和AC④。boundary_conditions的超时阈值与tf-01/tf-19的风险描述一致。"
+        },
+        {
+          "name": "user_value",
+          "score": 88,
+          "rationale": "直接解决frequency=10、severity=critical的高频痛点（sig-021/022/023），竞品调研（cf-02/04/06）证实为行业共性难题且无成熟方案。分阶段进度+结构化错误+自动重试的组合可减少用户盲目重试和重新上传，差异化优势明确。"
+        },
+        {
+          "name": "stage_fit",
+          "score": 84,
+          "rationale": "定位为稳定性bug修复+工程增强，根因明确（tf-05/tf-06），解决方案成熟（reference级），成本可控（low-medium为主）。GraphRAG幂等等高风险项已合理推迟，适合当前阶段作为核心稳定性修复优先推进。"
+        }
+      ],
+      "missing_info": [],
+      "ambiguities": [
+        "心跳超时阈值的精确数值需联调阶段与运维确认基线，当前默认值为初始参考"
+      ],
+      "followup_questions": [],
+      "gate": "pass",
+      "round": 2
+    },
+    "quality_history": [
+      {
+        "total": 61,
+        "dimensions": [
+          {
+            "name": "clarity",
+            "score": 72,
+            "rationale": "问题簇摘要详细描述了4种具体卡死场景（大文件80-100MB、GraphRAG队列堆积、docx卡0%、PDF pending），10条信号（sig-001~sig-023）与3类竞品发现（cf-01/02/04/06/07）提供了充分的问题语境，痛点描述精准落到了用户操作层面"
+          },
+          {
+            "name": "completeness",
+            "score": 48,
+            "rationale": "需求草稿缺少验收标准（acceptance_criteria为空）、缺少边界条件与非功能约束（boundary_conditions为空）、缺少非目标定义（non_goals为空），这三项是enrich阶段才补全的内容，当前完整度有限"
+          },
+          {
+            "name": "testability",
+            "score": 45,
+            "rationale": "当前没有验收标准，无法对'成功率提升至95%'等业务目标进行可测试的细化拆分；幂等性保证（tf-07/tf-23评估为high_risk）的具体验证策略也未明确"
+          },
+          {
+            "name": "acceptance_clarity",
+            "score": 42,
+            "rationale": "acceptance_criteria故意留空（初评阶段），没有可验证的通过/失败判定条件；业务目标'95%成功率'虽然量化但缺少测量口径定义（如统计周期、文件大小分档）"
+          },
+          {
+            "name": "evidence_sufficiency",
+            "score": 70,
+            "rationale": "10条用户信号覆盖多场景（sig-001~sig-023），7条竞品发现中有5条直接相关（cf-01/02/04/06/07），技术发现中tf-01/02/03/05/06/07/09/10/15/16/18/19/21/22/23共15条直接针对本簇问题，证据链条较为完整；部分技术方案（如tf-04/17/24预览解…"
+          },
+          {
+            "name": "scope_control",
+            "score": 65,
+            "rationale": "5项scope功能点覆盖了状态机拆分、心跳检测、错误透传、重试机制、前端展示，逻辑自洽；但幂等性保证（tf-07/tf-23）被评估为high_risk/high_cost，可能显著扩大实际开发范围，且GraphRAG图谱幂等合并逻辑的复杂度未充分界定边界"
+          },
+          {
+            "name": "feasibility",
+            "score": 62,
+            "rationale": "核心技术方案（状态机+心跳tf-01/19、错误分类tf-03/15/21、进度展示tf-09/18）均为reference成熟度、medium/low成本，可行性较好；但幂等性保证（tf-07/tf-23 maturity=high_risk, cost=high）是引入自动重试的前置依赖，存在较高的技术风险和工期不…"
+          },
+          {
+            "name": "consistency",
+            "score": 68,
+            "rationale": "scope 5项功能与cluster的3个categories（stability/bug/ux）一一对应：状态机+心跳+重试对标stability，错误链路修复对标bug，进度展示+错误展示对标ux；用户故事3条分别覆盖不同场景且与信号id匹配；但tf-08/11/12/13等unsuitable发现已正确排除"
+          },
+          {
+            "name": "user_value",
+            "score": 76,
+            "rationale": "cluster severity=critical、frequency=10，涉及用户最高频的核心操作路径（上传→解析→可用）；竞品cf-02/06确认大文件卡死是行业共性且无成熟方案，率先解决将形成差异化壁垒；sig-021/022/023表明用户已强烈表达不满，直接影响留存"
+          },
+          {
+            "name": "stage_fit",
+            "score": 60,
+            "rationale": "初评草稿阶段定位准确：背景/痛点/用户故事已充分展开，evidence_refs引用完整；刻意留空的acceptance_criteria/non_goals/boundary_conditions符合初评→enrich流程设计，missing_info中已明确标注3类缺失以触发后续补全"
+          }
+        ],
+        "missing_info": [
+          "缺少明确的验收标准——需为每个scope项定义可测试的通过/失败条件（如'100MB文件解析超时阈值不超过X分钟''worker崩溃后Y秒内自动检测并重试'）",
+          "缺少边界条件/非功能约束——需明确支持的文件大小上限、并发解析任务数限制、心跳写入频率、超时阈值分档策略等",
+          "缺少非目标定义——需明确本期不纳入的内容（如分块预览tf-04/17/24、引用溯源tf-11、检索质量优化tf-12/13等已被标记为unsuitable/experimental的方案）",
+          "幂等性保证方案（tf-07/tf-23, high_risk）的技术设计细节缺失——GraphRAG图谱实体去重与关系合并逻辑复杂度未充分评估"
+        ],
+        "ambiguities": [
+          "GraphRAG 幂等性设计是本期交付还是作为独立前置任务？其 cost=high（tf-07, tf-23）与当前 scope 的 medium 成本假设存在张力",
+          "心跳超时阈值的分档策略不明确——按文件大小分档（如<10MB/10-50MB/>50MB）还是按解析阶段分档（OCR阶段阈值 vs 嵌入阶段阈值）？",
+          "前端进度推送机制（轮询/SSE/WebSocket）的选择未在 scope 中明确，但会显著影响实现成本和用户体验",
+          "业务目标'成功率95%'的统计口径未定义——是否分文件大小分档统计？是否区分 GraphRAG 与普通解析？"
+        ],
+        "followup_questions": [
+          "GraphRAG 图谱构建的幂等写入（实体去重+关系合并）是否纳入本期 scope？若纳入，预计工期是否需要从 medium 调整为 high？",
+          "心跳超时阈值建议采用哪种分档策略：按文件大小分档（<10MB/10-50MB/>50MB）还是按解析阶段分档（OCR/embedding/indexing 各设独立阈值）？",
+          "前端进度推送选择轮询（低成本但有延迟）还是 SSE/WebSocket（实时但增加架构复杂度）？现有前端架构是否已支持 WebSocket？",
+          "'成功率提升至95%'的统计口径如何定义？是否需要按文件大小分档（如大文件>80MB单独统计）？",
+          "结构化错误码体系是否需要与现有日志/监控系统集成？错误码到用户可读文案的映射表由产品还是技术团队维护？"
+        ],
+        "gate": "needs_enrich",
+        "round": 1
+      },
+      {
+        "total": 86,
+        "dimensions": [
+          {
+            "name": "clarity",
+            "score": 88,
+            "rationale": "标题、背景、痛点、范围均清晰表述，根因分析（tf-05/tf-06）将多步骤压缩为单一态的问题链完整描述，业务目标可量化（≥95%成功率），目标用户与场景边界明确。"
+          },
+          {
+            "name": "completeness",
+            "score": 85,
+            "rationale": "所有必填字段已补齐：acceptance_criteria（7条含functional+nonfunctional）、non_goals（4条含GraphRAG幂等推迟依据）、boundary_conditions（6条含文件上限/超时/幂等/降级）。GraphRAG完整幂等性作为non_goal已说明拆分理由（tf-…"
+          },
+          {
+            "name": "testability",
+            "score": 86,
+            "rationale": "验收标准均含可测条件：状态流转断言、错误分类覆盖验证、重试次数与退避间隔精确值、心跳扫描频率≤60s、成功率7天窗口≥95%、幂等性无重复chunk断言。每条绑定上游证据，无空泛表述。"
+          },
+          {
+            "name": "acceptance_clarity",
+            "score": 85,
+            "rationale": "7条验收标准中4条functional+3条nonfunctional，每条含明确的pass/fail判定条件与验证方式（如「断言重试次数与最终状态符合预期」「无重复chunk记录」），并全部绑定evidence_refs（sig/cf/tf），可直接转化为测试用例。"
+          },
+          {
+            "name": "evidence_sufficiency",
+            "score": 88,
+            "rationale": "31条evidence_refs覆盖10个signals、8个competitor findings、16个tech findings，验收标准与边界条件均有上游证据支撑。核心方案（tf-01/tf-18/tf-19状态机+心跳）和风险项（tf-07/tf-23幂等）证据强度均为moderate，满足决策需求。"
+          },
+          {
+            "name": "scope_control",
+            "score": 84,
+            "rationale": "non_goals明确排除4项（GraphRAG完整幂等、分块预览、检索质量优化、备用解析引擎），每项引用tf/cf说明推迟理由。boundary_conditions用文件大小上限200MB和重试次数3次封顶防止范围蔓延。scope 5项与acceptance_criteria 7条一一对应。"
+          },
+          {
+            "name": "feasibility",
+            "score": 82,
+            "rationale": "核心方案（状态机tf-18/心跳tf-19/错误分类tf-21）均为reference成熟度、成本low-medium；high_risk的GraphRAG幂等（tf-23）已拆为non_goal。残留风险为心跳阈值调参（tf-01 risk）和前端进度推送机制选择，已通过boundary_conditions给出默认…"
+          },
+          {
+            "name": "consistency",
+            "score": 86,
+            "rationale": "scope、user_stories、acceptance_criteria三者对齐：状态机拆分对应scope①和AC①；错误透传对应scope③和AC②；自动重试对应scope④和AC③；进度条对应scope⑤和AC④。boundary_conditions的超时阈值与tf-01/tf-19的风险描述一致。"
+          },
+          {
+            "name": "user_value",
+            "score": 88,
+            "rationale": "直接解决frequency=10、severity=critical的高频痛点（sig-021/022/023），竞品调研（cf-02/04/06）证实为行业共性难题且无成熟方案。分阶段进度+结构化错误+自动重试的组合可减少用户盲目重试和重新上传，差异化优势明确。"
+          },
+          {
+            "name": "stage_fit",
+            "score": 84,
+            "rationale": "定位为稳定性bug修复+工程增强，根因明确（tf-05/tf-06），解决方案成熟（reference级），成本可控（low-medium为主）。GraphRAG幂等等高风险项已合理推迟，适合当前阶段作为核心稳定性修复优先推进。"
+          }
+        ],
+        "missing_info": [],
+        "ambiguities": [
+          "心跳超时阈值的精确数值需联调阶段与运维确认基线，当前默认值为初始参考"
+        ],
+        "followup_questions": [],
+        "gate": "pass",
+        "round": 2
+      }
+    ],
+    "status": "candidate",
+    "status_history": []
+  },
+  "opportunity": {
+    "requirement_id": "req-01",
+    "scores": [
+      {
+        "dimension": "pain_frequency",
+        "score": 92,
+        "rationale": "clu-01 频次达 10（最高档），用户信号覆盖大文件卡死（sig-001/sig-003）、docx 卡 0%（sig-005）、PDF 长期 pending（sig-006）、GraphRAG 队列堆积 worker 崩溃（sig-013/sig-014），几乎覆盖所有高频解析场景。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-001",
+          "sig-003",
+          "sig-005",
+          "sig-006",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "severity",
+        "score": 93,
+        "rationale": "簇严重度标记为 critical；GraphRAG 场景下 worker 崩溃后任务永久 pending，知识库无法交付，直接阻断日常工作流，属于生产阻断级故障。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "competitor_gap",
+        "score": 72,
+        "rationale": "Dify/AnythingLLM 同样面临大文件卡死（cf-02/cf-06），属行业共性痛点；但 Dify 已有三态标签+重新处理（cf-01），RAGFlow 连基础状态展示和错误反馈都缺失，存在体验层差距；不过竞品也未在架构层给出成熟方案，反而是差异化机会。",
+        "evidence_refs": [
+          "cf-01",
+          "cf-02",
+          "cf-06",
+          "cf-04"
+        ]
+      },
+      {
+        "dimension": "tech_feasibility",
+        "score": 80,
+        "rationale": "核心方案（状态机 tf-01/tf-18、心跳超时 tf-19、错误分类重试 tf-02/tf-21、结构化错误透传 tf-03/tf-22）均为 reference 级成熟实践，成本 low–medium；但幂等性保证（tf-07/tf-23）标记 high_risk 且 GraphRAG 场景复杂度高，拉低整体可行…",
+        "evidence_refs": [
+          "tf-01",
+          "tf-18",
+          "tf-19",
+          "tf-02",
+          "tf-21",
+          "tf-03",
+          "tf-22",
+          "tf-07",
+          "tf-23"
+        ]
+      },
+      {
+        "dimension": "requirement_quality",
+        "score": 86,
+        "rationale": "需求质量评分 86 分，痛点描述清晰、场景具体（80–100MB 大文件、GraphRAG 队列堆积、docx/PDF 格式差异），技术方案调研充分，可执行性高。",
+        "evidence_refs": [
+          "req-01"
+        ]
+      },
+      {
+        "dimension": "cost",
+        "score": 75,
+        "rationale": "心跳超时检测（tf-19）和重试装饰器（tf-02/tf-21）成本为 low；状态机拆分（tf-01/tf-16）和错误透传全链路（tf-03/tf-22）为 medium；幂等性保证（tf-07/tf-23）为 high，是主要成本风险点；整体投入产出比合理，但幂等性部分需预留缓冲。",
+        "evidence_refs": [
+          "tf-19",
+          "tf-02",
+          "tf-21",
+          "tf-01",
+          "tf-16",
+          "tf-03",
+          "tf-22",
+          "tf-07",
+          "tf-23"
+        ]
+      },
+      {
+        "dimension": "business_value",
+        "score": 90,
+        "rationale": "解析是 RAG 全链路入口，解析不稳定则知识库无法交付、下游检索问答全部失效；修复后直接恢复核心产品可用性，对付费用户留存与口碑影响极大。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "strategy_fit",
+        "score": 88,
+        "rationale": "团队偏好为「提升体验」，本需求直击用户最痛的解析卡死体验；RAGFlow 以深度解析为核心差异化能力，修复稳定性可巩固技术壁垒，与产品战略高度一致。",
+        "evidence_refs": [
+          "clu-01"
+        ]
+      },
+      {
+        "dimension": "urgency",
+        "score": 90,
+        "rationale": "severity=critical + frequency=10，任务永久卡死直接阻断用户日常工作流；GraphRAG 场景队列堆积属系统性故障，不修复将持续恶化口碑。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "core_path_impact",
+        "score": 95,
+        "rationale": "解析是知识库构建的核心链路第一步——提取→OCR→分块→嵌入→索引全在此链路；该环节不稳定则整条 RAG 链路瘫痪，影响面无出其右。",
+        "evidence_refs": [
+          "clu-01",
+          "tf-16",
+          "tf-05"
+        ]
+      }
+    ],
+    "total": 86.57,
+    "priority": "P0",
+    "horizon": "now",
+    "rationale": "解析稳定性是 RAG 产品核心链路入口，频次最高（10）+严重度 critical + 多场景覆盖，且大部分修复方案为成熟工程实践（状态机/心跳/错误分类/重试），应立即启动 Now 阶段修复。",
+    "special_types": []
+  },
+  "roadmap": [
+    {
+      "cluster_id": "clu-01",
+      "title": "解析任务频繁卡死/失败，GraphRAG 与大文件场景尤甚",
+      "priority": "P0",
+      "horizon": "now",
+      "one_line_reason": "核心链路入口、频次 10/严重度 critical、竞品也未解决属差异化机会，成熟方案可快速落地。",
+      "is_focus": true
+    },
+    {
+      "cluster_id": "clu-02",
+      "title": "缺少解析进度条展示与批量上传失败反馈",
+      "priority": "Duplicate",
+      "horizon": "later",
+      "one_line_reason": "状态为 duplicate，其核心诉求（进度展示与失败反馈）已被 clu-01 焦点需求的结构化错误透传与分阶段进度方案覆盖。",
+      "is_focus": false
+    },
+    {
+      "cluster_id": "clu-03",
+      "title": "多知识库检索召回下降、引用溯源不准、表格解析退化",
+      "priority": "P1",
+      "horizon": "next",
+      "one_line_reason": "严重度 high + 频次 8，影响检索质量与用户信任，但需在解析稳定性修复（clu-01）完成后推进，避免并行引入回归风险。",
+      "is_focus": false
+    }
+  ],
+  "solution": {
+    "requirement_id": "req-01",
+    "summary": "针对用户上传大文件（80–100MB+）后解析任务频繁卡死、失败无明确提示、GraphRAG 场景队列堆积的 P0 级问题，本方案构建一套以\"分阶段状态机 + Worker 心跳超时检测\"为核心的解析任务稳定性体系。方案覆盖：将解析流程拆分为 8 个枚举阶段并持久化阶段级进度与心跳；引入结构化错误码体系（OOM/OCR…",
+    "scope": [
+      "解析流程分阶段拆分与状态枚举设计：uploaded→queued→extracting→ocr→chunking→embedding→indexing→done|failed，每个阶段切换时持久化阶段名、进度百分比、已处理 chunk/总 chunk、worker 心跳时间戳到状态表（tf-16, tf-18, tf-…",
+      "Worker 心跳机制：task_executor 在每个解析阶段定期写入心跳时间戳（默认 30s 间隔），后端定时扫描任务（≤60s 频率），超过阶段阈值 2× 无心跳则强制标记 error_type=worker_crash 并触发重试或落 failed（tf-01, tf-19）",
+      "动态超时阈值：按文件大小与解析阶段配置阈值——≤100MB 文件 extracting 10min/ocr 15min per batch/embedding 5min per 500 chunks；100–200MB 各阶段翻倍（tf-01, tf-19）",
+      "结构化错误码体系：定义 error_type 枚举（oom / ocr_timeout / unsupported_format / dependency_error / worker_crash / file_corrupted）、error_stage（对应解析阶段）、error_message（技术详情）、ret…",
+      "可重试 vs 不可重试错误分类：瞬时错误（网络抖动、依赖 5xx、超时、worker_crash）触发指数退避自动重试（10s/30s/90s，最多 3 次）；确定性错误（unsupported_format、file_corrupted）直接落 failed 不消耗重试额度（tf-02, tf-21）",
+      "重试幂等保证：分块写入使用基于文档 hash + 偏移量的稳定 chunk ID 进行 upsert；重试前先检测并清理上一阶段残留的分块/索引数据（先删后建），防止脏数据；本期仅覆盖分块/索引幂等，GraphRAG 图谱幂等拆为独立前置任务（tf-02, tf-07, tf-23）",
+      "进度持久化写入策略：节流批量写入（每 500ms 或每处理 10 个 chunk 取其一更新，先到者为准），避免大批量并发解析时数据库写入瓶颈（tf-20）",
+      "前端分阶段进度条：展示当前阶段名 + 已处理 chunk/总 chunk，轮询间隔 ≤5s；对无法预估总 chunk 数的格式降级展示已完成阶段数/总阶段数；失败时展示友好化错误文案 + 手动重试按钮（tf-09, tf-10）",
+      "文件大小上限 200MB 前置校验：超过此限制在上传阶段即拒绝并给出明确错误提示，避免超大文件触发 OOM（tf-15, cf-02）"
+    ],
+    "non_goals": [
+      "GraphRAG 完整幂等性设计（实体去重、关系合并）：成本评估为 high 且逻辑复杂度高（tf-07, tf-23），拆为独立前置任务先行解决，本期仅覆盖分块/索引的 upsert 幂等保证",
+      "分块预览解析（大文件冒烟测试）：方案尚处 experimental 阶段，对 80–100MB 文件的「轻量」假设未经验证（tf-04, tf-17, tf-24），推迟到稳定性修复完成后的后续迭代",
+      "RAG 检索质量优化（混合检索 BM25+向量、reranker、多知识库分数归一化）：与解析稳定性无关（tf-08, tf-12, tf-13），不在本期范围",
+      "可插拔/备用解析引擎集成（如 docx→PDF 转换再解析的自动 fallback）：cf-05 提供参考但优先级低于核心卡死修复，推迟到后续迭代",
+      "SSE/WebSocket 实时推送：前端进度推送本期采用轮询模式（≤5s 间隔），推送方案作为后续性能优化项（tf-09, tf-20）"
+    ],
+    "user_flow": [
+      "【上传阶段】用户在知识库管理页面上传文档文件；系统在客户端/网关层校验文件大小（>200MB 直接拒绝并返回明确错误提示「文件超过 200MB 上限，请压缩或拆分后上传」），校验通过后将文件写入对象存储并创建解析任务记录，初始状态为 uploaded（tf-15, cf-02）",
+      "【调度阶段】解析调度器从任务队列取到任务后，状态推进为 queued；分配 worker 后状态推进为 extracting，worker 开始执行文本提取并写入首次心跳时间戳（tf-01, tf-16, tf-18）",
+      "【解析执行与阶段流转】worker 依次执行 extracting→ocr→chunking→embedding→indexing 各阶段；每个阶段内定期更新心跳（30s 间隔）和进度（已处理 chunk/总 chunk 或阶段内百分比）；阶段切换时持久化当前阶段名、进度、时间戳到状态表；进度写入采用节流批量策略（每 …"
+    ],
+    "acceptance_criteria": [
+      {
+        "text": "解析任务必须按枚举阶段流转（uploaded→queued→extracting→ocr→chunking→embedding→indexing→done|failed），每个阶段切换时将当前阶段名、进度、心跳时间戳持久化到状态表；worker 崩溃后，心跳超时检测在 2×阶段阈值内将任务标记为 failed 或触发重…",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-013",
+          "sig-014",
+          "tf-05",
+          "tf-16",
+          "tf-18",
+          "tf-19"
+        ]
+      },
+      {
+        "text": "解析任务失败时，系统必须写入结构化错误记录（error_type/error_stage/error_message/retryable），至少覆盖 OOM、OCR 超时、格式不支持、依赖服务抖动四类错误分类；前端展示用户友好化文案并提供手动重试按钮，用户看到的错误原因不再是笼统的「解析失败」",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-001",
+          "sig-003",
+          "tf-03",
+          "tf-06",
+          "tf-10",
+          "tf-15",
+          "tf-22"
+        ]
+      },
+      {
+        "text": "瞬时错误（网络抖动、依赖 5xx、超时、worker_crash）触发自动重试（指数退避 10s/30s/90s，最多 3 次）；确定性错误（格式不支持、文件损坏）直接落 failed + 原因码，不消耗重试额度；验证方式：对每类错误构造测试用例，断言重试次数与最终状态符合预期",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-022",
+          "tf-02",
+          "tf-21"
+        ]
+      },
+      {
+        "text": "前端分阶段进度条展示当前阶段名 + 已处理 chunk/总 chunk，轮询间隔 ≤5s；用户可明确区分「正常处理中」与「卡住」两种状态；对于无法预估总 chunk 数的格式，进度条展示已完成阶段数/总阶段数作为降级展示",
+        "type": "functional",
+        "evidence_refs": [
+          "sig-023",
+          "cf-07",
+          "tf-09",
+          "tf-20"
+        ]
+      },
+      {
+        "text": "自动重试前，系统必须对上一阶段的残留分块/索引数据执行清理（基于稳定 chunk ID 的 upsert 或先删后建）；验证方式：故意在 embedding 阶段中途触发重试，断言重试后向量索引中无重复 chunk 记录",
+        "type": "functional",
+        "evidence_refs": [
+          "tf-02",
+          "tf-07",
+          "tf-23"
+        ]
+      },
+      {
+        "text": "文件大小超过 200MB 时在上传阶段即被拒绝并返回明确错误提示，不创建解析任务；此校验必须在文件完整上传前（客户端预检 + 网关侧 Content-Length 校验）双重保障",
+        "type": "functional",
+        "evidence_refs": [
+          "tf-15",
+          "cf-02",
+          "sig-001"
+        ]
+      },
+      {
+        "text": "【性能/非功能】心跳超时阈值按文件大小与解析阶段动态配置（≤100MB：extracting 10min/ocr 15min/embedding 5min per 500 chunks；100–200MB：各阶段阈值翻倍），心跳扫描任务频率 ≤60s，扫描期间对批量并发解析的数据库写入压力不超过基线 20%",
+        "type": "nonfunctional",
+        "evidence_refs": [
+          "tf-01",
+          "tf-19",
+          "tf-20"
+        ]
+      },
+      {
+        "text": "【可观测性/非功能】解析任务成功率（done/总任务数）在 7 天滚动窗口内 ≥95%（含 80–100MB 大文件场景）；失败任务中至少 90% 携带结构化错误分类，可从日志中按 error_type 聚合查询统计失败分布",
+        "type": "nonfunctional",
+        "evidence_refs": [
+          "sig-001",
+          "sig-003",
+          "cf-02",
+          "cf-06",
+          "tf-15",
+          "tf-22"
+        ]
+      },
+      {
+        "text": "【幂等性/非功能】分块写入使用基于文档 hash + 偏移量的稳定 chunk ID；并发重试同一任务时，通过任务级排他锁（或状态机 CAS）防止两个 worker 同时执行同一阶段写入，避免数据竞争",
+        "type": "nonfunctional",
+        "evidence_refs": [
+          "tf-02",
+          "tf-07",
+          "tf-23",
+          "tf-19"
+        ]
+      }
+    ],
+    "edge_cases": [
+      "超大文件（接近 200MB 上限）在 extracting 阶段触发 OOM：需确保异常被捕获并分类为 error_type=oom，不是裸 Exception 导致 worker 进程直接 crash 后无任何错误记录；worker crash 后心跳超时检测兜底（tf-15, tf-19）",
+      "OCR 阶段处理大量图片页导致单批次超时：需按批次设置超时而非整阶段单一超时；若某批次超时触发重试，重试时应跳过已完成的批次而非从头重来（tf-01, tf-02）",
+      "并发上传多个大文件同时进入 embedding 阶段：多个 worker 并发写入向量索引可能导致写入瓶颈或锁冲突；需验证进度持久化的节流写入策略（每 500ms/10 chunk）在此场景下不会成为性能瓶颈（tf-20）"
+    ],
+    "test_scenarios": [
+      "【阶段状态流转验证】上传一个 50MB PDF 文件，跟踪任务从 uploaded→queued→extracting→ocr→chunking→embedding→indexing→done 的完整流转，断言每个阶段的状态名、进度、心跳时间戳均已正确持久化到状态表；模拟在 chunking 阶段 kill worke…",
+      "【错误分类与透传验证】分别构造 4 类错误场景——(a) 注入 OOM（限制 worker 内存）触发 oom 错误；(b) 使用全图片 PDF 且关闭 OCR 加速导致 ocr_timeout；(c) 上传 .xyz 不支持格式触发 unsupported_format；(d) Mock 嵌入服务返回 503 触发 …",
+      "【自动重试与幂等性验证】在 embedding 阶段处理到 50% 时注入瞬时错误（向量库 503），验证系统按 10s→30s→90s 间隔自动重试；断言重试前对 embedding 阶段残留数据执行了清理（向量索引中无重复 chunk ID）；3 次重试后若仍失败则落 failed；另对 unsupported_f…"
+    ],
+    "role_notes": {
+      "product": "本方案是 P0 优先级 Now 阶段核心修复，直接影响 RAG 产品核心链路的可用性。价值主张：将解析成功率提升至 ≥95%、消灭永久 pending/0% 卡死、让用户失败时能针对性处理而非盲目重试。范围把控上要严格守住 non_goals 边界——GraphRAG 图谱幂等（tf-07, tf-23）、分块预览（t…",
+      "dev": "核心改动集中在三层：(1) task_executor 侧——将解析流程拆分为 8 个独立可上报阶段，每阶段入口写入状态转换 + 首次心跳，阶段内定期更新心跳（30s）和进度（节流 500ms/10 chunk）；异常捕获层增加错误分类逻辑（tf-05, tf-16）。(2) 数据模型层——扩展任务状态表增加字段：cu…",
+      "qa": "重点验证三大模块：(1) 状态机阶段流转——覆盖全流程正常路径 + 每个阶段的异常中断路径，重点验证 worker kill 后心跳超时检测的及时性（2× 阈值内标记）和正确性（不误杀正常任务）。(2) 错误分类与重试——需对每种 error_type 构造确定性测试用例（OOM/OCR 超时/格式不支持/依赖抖动），…",
+      "support": "上线后向用户传达的核心信息：「解析任务现在支持分阶段进度展示，您可以清楚地看到任务进行到哪一步；失败时会给出具体原因（如 OCR 超时、格式不支持）而非笼统的『解析失败』；部分临时性错误会自动重试，无需手动操作」。常见问答准备：(1) Q: 为什么我的任务还在转圈？A: 请查看进度条当前阶段——如果是 OCR/embe…"
+    },
+    "risks": [
+      "重试幂等性不完整导致脏数据：本期仅覆盖分块/索引 upsert 幂等，GraphRAG 场景下图谱构建（实体抽取/关系建立）的幂等性未解决（tf-07, tf-23 cost=high）。若 GraphRAG 任务触发重试可能产生重复实体节点和关系边，污染图谱质量。缓解措施：GraphRAG 任务的重试逻辑需额外增加「…",
+      "心跳超时阈值设置不当导致误杀正常任务：大文件 OCR 阶段单批次处理可能超过预期时间，若阈值过紧会误判正常任务为卡死并触发不必要的重试（浪费资源 + 延迟）。缓解措施：阈值设计基于 tf-01, tf-19 的参考值并在灰度阶段收集实际处理时长数据校准；OCR 阶段按批次而非整阶段设置超时；误杀后重试是幂等的不会产生脏…",
+      "进度持久化写入频率与存储方案未完全验证：tf-20 标注 evidence_strength=weak，500ms/10 chunk 的节流策略和数据库写入方案在 10+ 大文件并发场景下是否真能控制写入压力在基线 20% 以内，需在性能测试中验证。若不达标可能需要引入 Redis 缓存层或异步写入队列，增加方案复杂度…",
+      "状态表 schema migration 对存量任务的影响：新增多个字段（error_type/last_heartbeat_at/stage_progress 等）需要对存量任务记录做迁移；存量正在执行的解析任务可能处于旧的单一「parsing」状态，上线后这些任务可能无法被新的心跳检测识别。缓解措施：上线时先将存量…",
+      "前端轮询模式下 API 并发压力：多个用户同时查看大量解析任务时，≤5s 的轮询间隔可能对状态查询 API 造成压力。缓解措施：API 侧支持批量查询（一次返回多个任务状态）、添加 ETag/304 缓存、或限制前端同时轮询的任务数量。"
+    ],
+    "dependencies": [
+      "分块 ID 稳定化改造：自动重试幂等保证的前提是分块写入使用基于文档 hash + 偏移量的稳定 chunk ID（而非随机/自增 ID），此改造必须在自动重试功能上线前完成（tf-02, tf-07, tf-23）",
+      "任务状态表 schema migration：新增 current_stage/stage_progress/processed_chunks/total_chunks/last_heartbeat_at/error_type/error_stage/error_message/retryable/retry_coun…",
+      "心跳超时扫描任务的基础设施：依赖 celery beat 或 cron 定时任务调度能力（tf-19）；扫描任务自身需有健康检查和自动重启机制",
+      "前端进度条组件与后端状态 API 的数据格式协议：两端需提前协调进度数据的 JSON 结构（阶段名、chunk 进度、心跳时间、错误信息格式），避免前后端联调阻塞（tf-09, tf-20）",
+      "GraphRAG 图谱幂等性独立前置任务：虽然不在本期 scope 内，但 GraphRAG 场景的自动重试安全性依赖于此；需在本期上线前明确 GraphRAG 任务的重试策略（是否暂时禁用自动重试）（tf-07, tf-23）"
+    ]
+  },
+  "code_impact": {
+    "requirement_id": "req-01",
+    "items": [
+      {
+        "module_path": "rag/svr",
+        "impact_level": "certain",
+        "impact_types": [
+          "service",
+          "api",
+          "config",
+          "data_model"
+        ],
+        "description": "task_executor 是本次改造的核心载体：需实现 8 阶段状态机流转与持久化、Worker 心跳定期写入（30s 间隔）、结构化异常捕获与 error_type 分类（oom/ocr_timeout/worker_crash/dependency_error 等）、可重试 vs 不可重试判定、指数退避重试调度（…",
+        "is_core_module": true,
+        "risk_tier": "high",
+        "verify_points": [
+          "构造 80MB+ PDF 文件验证各阶段状态流转正确且 last_heartbeat_at 持续更新",
+          "模拟 worker crash（kill 进程）验证 2× 阶段阈值内被扫描器标记 worker_crash 并触发重试或落 failed",
+          "注入 OOM 异常验证 error_type=oom 且 retryable 判定正确",
+          "验证指数退避间隔 10s/30s/90s 序列与重试次数上限 3 次后落 failed",
+          "验证重试前对上一阶段残留 chunk/索引数据的清理逻辑无重复记录",
+          "验证进度写入节流策略在高并发下不会成为瓶颈"
+        ]
+      },
+      {
+        "module_path": "rag/nlp",
+        "impact_level": "certain",
+        "impact_types": [
+          "service",
+          "data_model"
+        ],
+        "description": "分词、嵌入、检索打分管线需支持稳定 chunk ID 生成（文档 hash + 偏移量），保证重试 upsert 幂等；embedding 阶段需支持进度回调与批次级超时；embedding 模型调用需捕获依赖服务异常并分类为 dependency_error。",
+        "is_core_module": true,
+        "risk_tier": "high",
+        "verify_points": [
+          "验证同一文档多次重试后 chunk ID 一致且向量索引无重复",
+          "模拟嵌入模型服务 5xx 验证异常被分类为 dependency_error 且 retryable=true",
+          "验证 embedding 阶段每 500 chunk 的进度回调被正确上报到状态表"
+        ]
+      },
+      {
+        "module_path": "deepdoc/parser",
+        "impact_level": "certain",
+        "impact_types": [
+          "service"
+        ],
+        "description": "extracting 阶段的格式解析器（PDF/DOCX/Excel）需支持进度回调与阶段心跳写入；大文件解析需捕获 OOM 异常并向上层透传 error_type=oom；unsupported_format 需在解析入口校验并分类为不可重试错误。",
+        "is_core_module": true,
+        "risk_tier": "high",
+        "verify_points": [
+          "构造 100MB+ PDF 触发内存峰值验证 OOM 被捕获并记录 error_type=oom 而非裸 Exception",
+          "上传不支持的格式验证 error_type=unsupported_format 且 retryable=false 直接落 failed",
+          "验证 extracting 阶段心跳时间戳持续更新"
+        ]
+      },
+      {
+        "module_path": "api/db",
+        "impact_level": "certain",
+        "impact_types": [
+          "data_model",
+          "service"
+        ],
+        "description": "任务状态表需新增字段 current_stage/stage_progress/processed_chunks/total_chunks/last_heartbeat_at/error_type/error_stage/error_message/retryable/retry_count/next_retry_at…",
+        "is_core_module": false,
+        "risk_tier": "low",
+        "verify_points": [
+          "验证 migration 在空库和有存量数据的库上均可正常执行",
+          "验证存量 parsing 状态任务被正确映射到新枚举值或标记为 failed",
+          "验证任务状态 CAS 操作在并发重试场景下仅一个请求成功",
+          "验证批量查询 API 一次返回多个任务状态减少轮询压力"
+        ]
+      }
+    ],
+    "suggested_order": [
+      "api/db",
+      "deepdoc/parser",
+      "deepdoc/vision",
+      "rag/app",
+      "rag/nlp",
+      "rag/svr",
+      "rag/llm",
+      "rag/graphrag",
+      "docker",
+      "api/apps",
+      "web/src",
+      "test"
+    ],
+    "human_confirmation_needed": [
+      "rag/svr（核心模块）：task_executor 是本次改造的核心载体：需实现 8 阶段状态机流转与持久化、Worker 心跳定期写入（30s 间隔）、结构化异常捕获与 error_type 分类（oom/ocr_timeout/worker_crash/dependency_error 等）、可重试 vs 不可…",
+      "rag/nlp（核心模块）：分词、嵌入、检索打分管线需支持稳定 chunk ID 生成（文档 hash + 偏移量），保证重试 upsert 幂等；embedding 阶段需支持进度回调与批次级超时；embedding 模型调用需捕获依赖服务异常并分类为 dependency_error。",
+      "deepdoc/parser（核心模块）：extracting 阶段的格式解析器（PDF/DOCX/Excel）需支持进度回调与阶段心跳写入；大文件解析需捕获 OOM 异常并向上层透传 error_type=oom；unsupported_format 需在解析入口校验并分类为不可重试错误。",
+      "rag/flow（uncertain）：管线编排层可能需要协调多阶段流转与心跳写入的编排逻辑，但具体改造范围取决于现有编排架构是否已在 task_executor 内完成阶段切换。需确认是否有独立编排入口需要同步改造。",
+      "rag/graphrag（uncertain）：GraphRAG 场景的自动重试安全性依赖图谱幂等性，本期不在 scope 内但需明确策略：对 GraphRAG 任务禁用自动重试或增加跳过已完成子图的前置检查。具体落点取决于 GraphRAG 任务入口与 task_executor 的关系。"
+    ]
+  },
+  "execution": {
+    "requirement_id": "req-01",
+    "tasks": [
+      {
+        "id": "task-01",
+        "type": "data",
+        "title": "任务状态表 schema migration 与存量数据兼容",
+        "description": "在 api/db 层新增任务状态表字段（current_stage, stage_progress, processed_chunks, total_chunks, last_heartbeat_at, error_type, error_stage, error_message, retryable, retry_c…",
+        "related_modules": [
+          "api/db"
+        ],
+        "evidence_refs": [
+          "tf-18",
+          "tf-22"
+        ],
+        "risk_tier": "low"
+      },
+      {
+        "id": "task-02",
+        "type": "backend",
+        "title": "稳定 chunk ID 生成改造（文档 hash + 偏移量）",
+        "description": "改造 rag/app 分块模板与 rag/nlp 分词管线，使 chunk ID 基于文档 hash + 偏移量确定性生成，保证重试时 upsert 幂等。需验证不同文档类型（PDF/DOCX/Excel）均能产生稳定且唯一的 chunk ID，且同一文档重复解析 ID 不变。",
+        "related_modules": [
+          "rag/app",
+          "rag/nlp"
+        ],
+        "evidence_refs": [
+          "tf-02",
+          "tf-07",
+          "tf-23"
+        ],
+        "risk_tier": "high"
+      },
+      {
+        "id": "task-03",
+        "type": "backend",
+        "title": "解析状态机与阶段持久化实现",
+        "description": "在 rag/svr task_executor 中实现 8 阶段枚举状态机（uploaded→queued→extracting→ocr→chunking→embedding→indexing→done|failed），每阶段切换时持久化阶段名、进度百分比、processed_chunks/total_chunks、l…",
+        "related_modules": [
+          "rag/svr",
+          "deepdoc/parser",
+          "deepdoc/vision",
+          "rag/nlp"
+        ],
+        "evidence_refs": [
+          "tf-16",
+          "tf-18",
+          "tf-05",
+          "tf-20"
+        ],
+        "risk_tier": "high"
+      },
+      {
+        "id": "task-04",
+        "type": "backend",
+        "title": "Worker 心跳机制与超时扫描任务",
+        "description": "在 rag/svr task_executor 各阶段实现 30s 间隔心跳写入；实现定时扫描任务（≤60s 频率），检测超过 2× 阶段阈值无心跳的任务并标记 error_type=worker_crash；动态超时阈值按文件大小配置（≤100MB/100-200MB 两档 × 各阶段）；扫描任务自身需健康检查与自动…",
+        "related_modules": [
+          "rag/svr",
+          "docker"
+        ],
+        "evidence_refs": [
+          "tf-01",
+          "tf-19"
+        ],
+        "risk_tier": "high"
+      }
+    ],
+    "change_suggestions": [
+      "api/db：新增 11 个字段到任务状态表，字段命名遵循下划线风格与现有约定一致；migration 脚本需同时提供存量数据迁移逻辑（旧 parsing 状态映射或标记 failed），以及完整的 down 回滚脚本。建议分两步迁移：先加字段（允许 NULL），再回填存量数据，降低锁表风险。",
+      "rag/app + rag/nlp：chunk ID 从随机/自增改为「SHA256(文档内容 hash) + 偏移量」拼接方案，确保确定性。需在全部分块模板（PDF/DOCX/Excel 等）中统一此逻辑。建议先在 rag/nlp 中封装 chunk_id 生成函数，各模板调用之。",
+      "rag/svr：将现有单一解析流程拆分为显式的 8 阶段状态机，每阶段入口/出口统一调用状态持久化方法。心跳写入与进度写入应合并为一次批量写操作（减少 DB 往返），节流策略在 task_executor 内部以装饰器或中间件方式实现。异常捕获层建议在每阶段 try-except 外层统一拦截，按异常类型映射到 err…",
+      "rag/svr 重试逻辑：重试调度器与首次执行共用同一阶段编排逻辑，仅在入口处增加「清理上一阶段残留」步骤。CAS 排他锁建议基于任务 ID + 当前阶段的状态机条件更新（UPDATE ... WHERE task_id=? AND current_stage=? AND status IN (allowed_stat…"
+    ],
+    "test_suggestions": [
+      "【单元测试】为每种 error_type（oom/ocr_timeout/unsupported_format/dependency_error/worker_crash/file_corrupted）构造 mock 异常注入点，断言异常捕获层正确分类并写入结构化错误字段",
+      "【单元测试】验证稳定 chunk ID 生成函数对同一文档内容多次调用结果一致，对不同文档内容结果不同",
+      "【单元测试】验证指数退避调度器产出 10s/30s/90s 间隔序列且第 4 次不再重试",
+      "【单元测试】验证 CAS 排他锁在两个并发线程同时触发重试时仅一个成功",
+      "【集成测试】构造完整的 8 阶段状态机流转测试，断言每阶段切换时状态表字段正确持久化",
+      "【集成测试】模拟 worker 在 embedding 阶段中途 crash（kill 进程），验证心跳扫描在 2× 阈值内标记 worker_crash 并触发重试，重试后向量索引无重复 chunk",
+      "【集成测试】故意在 OCR 阶段某批次注入超时，验证重试时跳过已完成批次仅处理超时批次",
+      "【集成测试】构造 unsupported_format 和 file_corrupted 场景，验证直接落 failed 且 retry_count 不增加",
+      "【E2E 测试】Playwright 测试前端进度条在正常流程下依次高亮 8 阶段并显示 chunk 进度；模拟 error_type=ocr_timeout 验证友好文案 + 重试按钮展示；模拟 unsupported_format 验证无重试按钮",
+      "【E2E 测试】验证客户端选择 >200MB 文件时上传按钮禁用并显示「文件超过 200MB 上限」提示",
+      "【性能测试】10+ 个 100MB 文件同时上传解析，监控数据库写入 QPS 和 P99 延迟，断言写入压力不超过无解析任务时基线的 20%",
+      "【性能测试】模拟 50+ 个任务状态并发轮询（5s 间隔），验证批量查询 API + ETag/304 缓存下服务端响应延迟可接受"
+    ],
+    "impl_plan": [
+      {
+        "step": 1,
+        "action": "完成任务状态表 schema 设计与 migration 脚本编写，包含存量数据兼容方案与回滚脚本，与 DBA 评审确认迁移窗口",
+        "modules": [
+          "api/db"
+        ],
+        "verify": "migration 在测试库空库和有存量数据两种场景下均执行成功；回滚脚本验证可逆；字段定义经 DBA 评审通过",
+        "risk": "存量正在执行的 parsing 任务需妥善处理，上线前需冻结或标记"
+      },
+      {
+        "step": 2,
+        "action": "实现稳定 chunk ID 生成函数（文档 hash + 偏移量）并集成到各分块模板，验证 ID 确定性与唯一性",
+        "modules": [
+          "rag/nlp",
+          "rag/app"
+        ],
+        "verify": "同一文档重复解析 3 次 chunk ID 完全一致；不同文档 chunk ID 不同；全部分块模板（PDF/DOCX/Excel）均使用统一生成函数",
+        "risk": "现有 chunk ID 格式变化可能影响向量库存量索引，需评估是否需要全量重建"
+      },
+      {
+        "step": 3,
+        "action": "定义 error_type 枚举规范与结构化错误字段标准，编写映射文档，前后端共同评审确认 JSON 数据结构协议",
+        "modules": [
+          "docs",
+          "api/apps",
+          "web/src"
+        ],
+        "verify": "error_type 枚举覆盖 6 种错误类型（含 retryable 取值）；前端友好文案映射表经产品确认；进度数据 JSON 结构经前后端双方签字确认",
+        "risk": "协议未提前确认可能导致前后端联调阻塞"
+      },
+      {
+        "step": 4,
+        "action": "在 task_executor 中实现 8 阶段状态机流转与阶段级进度持久化，含心跳写入与节流批量写入策略",
+        "modules": [
+          "rag/svr",
+          "deepdoc/parser",
+          "deepdoc/vision",
+          "rag/nlp"
+        ],
+        "verify": "单文件完整解析流程走完 8 阶段，每阶段切换时状态表字段正确；心跳时间戳每 30s 更新；进度写入频率符合节流策略（500ms/10chunk）",
+        "risk": "现有单一解析流程拆分为 8 阶段改动量大，需保证解析正确性不受影响"
+      }
+    ],
+    "changelog_draft": "【解析任务稳定性增强】\n\n新增功能：\n- 解析任务现支持 8 阶段可视化进度展示（上传→排队→文本提取→OCR→分块→嵌入→索引→完成），每阶段实时显示已处理进度，大文件解析过程一目了然\n- 新增 Worker 心跳超时检测机制，解析任务卡死时系统自动识别并在合理时间内标记失败或自动重试，不再永久卡在「解析中」状态\n-…",
+    "blocked": false
+  },
+  "critic_review": {
+    "findings": [
+      {
+        "target": "req-01",
+        "evidence_strength": "moderate",
+        "overreach": false,
+        "risk_tier": "high",
+        "note": "需求引用了 30 个上游信号/竞品发现/技术发现，闭包校验无违规，证据面广且自洽。但所有底层来源均为 mock:// 降级材料，无法验证信号真实性与竞品调研准确性，故证据强度封顶 moderate。需求本身的结构（状态机 + 错误透传 + 自动重试）与证据对应关系合理，无明显过度推断。",
+        "demote_to_observation": false
+      },
+      {
+        "target": "cf-01",
+        "evidence_strength": "moderate",
+        "overreach": false,
+        "risk_tier": "low",
+        "note": "来源 mock://dify.md，准确描述了 Dify 的文件级状态标签与缺失步骤级进度。结论本身克制，未过度推断。来源有限。",
+        "demote_to_observation": false
+      },
+      {
+        "target": "cf-02",
+        "evidence_strength": "moderate",
+        "overreach": false,
+        "risk_tier": "low",
+        "note": "来源 mock://dify.md，正确指出 Dify 大文件/批量卡死风险及高质量索引加剧成本的观察。关于「未提及分片上传、OOM 防护」的否定式描述合理但受限于材料覆盖面。来源有限。",
+        "demote_to_observation": false
+      },
+      {
+        "target": "cf-03",
+        "evidence_strength": "weak",
+        "overreach": false,
+        "risk_tier": "low",
+        "note": "整条结论均为「材料未涉及」的否定式陈述——无法从材料判断 Dify 是否支持 GraphRAG 或任务队列架构。这是材料覆盖面的局限而非可操作的竞品发现，应降级为观察。来源有限。",
+        "demote_to_observation": true
+      }
+    ],
+    "pending_confirmations": [
+      "【rag/svr 核心模块】task_executor 是本次改造核心载体：需实现 8 阶段状态机流转与持久化、Worker 心跳定期写入（30s 间隔）、结构化异常捕获与 error_type 分类（oom/ocr_timeout/worker_crash/dependency_error）、可重试 vs 不可重试判…",
+      "【rag/nlp 核心模块】需支持稳定 chunk ID 生成（文档 hash + 偏移量）保证重试 upsert 幂等；embedding 阶段需支持进度回调与批次级超时；embedding 模型调用需捕获依赖服务异常并分类为 dependency_error。请确认嵌入管线当前是否已有进度回调机制，以及 chunk…",
+      "【deepdoc/parser 核心模块】extracting 阶段的格式解析器（PDF/DOCX/Excel）需支持进度回调与阶段心跳写入；大文件解析需捕获 OOM 异常并向上层透传 error_type=oom；unsupported_format 需在解析入口校验并分类为不可重试错误。请确认各格式解析器是否能安全…",
+      "【rag/flow uncertain】管线编排层可能需要协调多阶段流转与心跳写入的编排逻辑，具体改造范围取决于现有编排架构是否已在 task_executor 内完成阶段切换。请人工确认是否有独立编排入口需要同步改造，避免编排层与状态机层产生不一致。",
+      "【rag/graphraph uncertain】GraphRAG 场景的自动重试安全性依赖图谱幂等性，本期不在 scope 内但需明确策略：对 GraphRAG 任务禁用自动重试或增加跳过已完成子图的前置检查。请人工确认 GraphRAG 任务入口与 task_executor 的关系，以及禁用自动重试是否会导致 G…",
+      "【待确认-阈值类】AC-41 的 200MB 文件大小上限、AC-42 的动态超时阈值具体数值（extracting 10min/ocr 15min/embedding 5min 等）、AC-43 的 95% 成功率指标均为工程决策，上游证据（全部 mock 来源）未提供历史性能基线或压测数据。请人工确认这些数值是否有…"
+    ],
+    "redo_target": null,
+    "redo_instructions": ""
+  },
+  "human_decisions": [
+    {
+      "checkpoint": "final_review",
+      "item_ref": "req-01",
+      "action": "accept",
+      "reason": "",
+      "edited_content": "",
+      "timestamp": "2026-06-13T10:34:11.644143+00:00"
+    },
+    {
+      "checkpoint": "final_review",
+      "item_ref": "cf-01",
+      "action": "accept",
+      "reason": "",
+      "edited_content": "",
+      "timestamp": "2026-06-13T10:34:11.644161+00:00"
+    },
+    {
+      "checkpoint": "final_review",
+      "item_ref": "cf-02",
+      "action": "accept",
+      "reason": "",
+      "edited_content": "",
+      "timestamp": "2026-06-13T10:34:11.644168+00:00"
+    }
+  ],
+  "report_paths": []
+}

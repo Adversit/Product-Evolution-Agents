@@ -1,7 +1,7 @@
 # Claude Design 交接包 ① — 产品级决策网页
 
-> 用法：把**本文件**拖给 Claude Design；同时附上 `docs/design_handoff_sample_state.json`（真实数据）与 `docs/sample_reports/executive_summary.md`、`opportunity_report.md`（真实内容）。先做 Hero 屏，满意后再扩展。
-> 完整需求见 `docs/frontend_product_ui.md`。
+> 用法：把**本文件夹（`docs/claude_design/product/`）内的全部文件**一起上传给 Claude Design——本简报 + `sample_state.json`（真实数据）+ 4 份 `*_report.md`/`*_summary.md`（真实内容）。先做 Hero 屏（焦点需求 58→86），满意后再按文末顺序扩展。
+> 完整需求见仓库 `docs/frontend_product_ui.md`。
 
 ---
 
