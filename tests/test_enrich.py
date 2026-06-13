@@ -14,23 +14,23 @@ import pytest
 
 from conftest import (
     make_cluster,
-    make_draft_candidate,
-    make_enriched_candidate,
+    make_draft_llm,
+    make_enriched_llm,
     make_findings,
 )
 from evopm import llm
-from evopm.agents.requirement import RequirementAgent
+from evopm.agents.requirement import RequirementAgent, RequirementDraftLLM
 from evopm.rules import QUALITY_DIMS
-from evopm.schemas import GateStatus, RequirementCandidate
+from evopm.schemas import GateStatus
 
 
 def _two_phase_agent(monkeypatch):
-    """draft 返回低分草稿、enrich 返回高分补全；按 prompt_file 区分。"""
-    draft = make_draft_candidate()
-    enriched = make_enriched_candidate()
+    """draft 返回低分草稿、enrich 返回高分补全；按 prompt 内容区分两阶段。"""
+    draft = make_draft_llm()
+    enriched = make_enriched_llm()
 
     def fake(schema, system, user, model=None, use_cache=True):
-        assert schema is RequirementCandidate
+        assert schema is RequirementDraftLLM
         # enrich.md 的系统提示含 "高光" 字样标识；用 prompt 内容区分两阶段
         if "补全" in system and "高光" in system:
             return enriched.model_copy(deep=True)
@@ -86,9 +86,9 @@ def test_enrich_keeps_two_round_history(monkeypatch):
 
 
 def test_enrich_drops_illegal_evidence_in_criteria(monkeypatch):
-    enriched = make_enriched_candidate()
+    enriched = make_enriched_llm()
     enriched.acceptance_criteria[0].evidence_refs = ["cf-01", "tf-999"]  # tf-999 非法
-    draft = make_draft_candidate()
+    draft = make_draft_llm()
 
     def fake(schema, system, user, model=None, use_cache=True):
         return (enriched if ("补全" in system and "高光" in system) else draft).model_copy(deep=True)

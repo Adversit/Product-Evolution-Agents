@@ -11,23 +11,23 @@ import os
 
 import pytest
 
-from conftest import make_cluster, make_draft_candidate, make_findings
+from conftest import make_cluster, make_draft_llm, make_findings
 from evopm import llm
-from evopm.agents.requirement import RequirementAgent
+from evopm.agents.requirement import RequirementAgent, RequirementDraftLLM
 from evopm.rules import QUALITY_DIMS
-from evopm.schemas import Category, GateStatus, RequirementCandidate
+from evopm.schemas import Category, GateStatus
 
 
-def _patch_llm(monkeypatch, returned: RequirementCandidate):
+def _patch_llm(monkeypatch, returned: RequirementDraftLLM):
     def fake(schema, system, user, model=None, use_cache=True):
-        assert schema is RequirementCandidate
+        assert schema is RequirementDraftLLM
         return returned.model_copy(deep=True)
 
     monkeypatch.setattr(llm, "structured_call", fake)
 
 
 def test_draft_overwrites_total_and_gate(monkeypatch):
-    _patch_llm(monkeypatch, make_draft_candidate())
+    _patch_llm(monkeypatch, make_draft_llm())
     cluster = make_cluster()
     cf, tf = make_findings()
     agent = RequirementAgent()
@@ -50,7 +50,7 @@ def test_draft_overwrites_total_and_gate(monkeypatch):
 
 
 def test_draft_appends_quality_history(monkeypatch):
-    _patch_llm(monkeypatch, make_draft_candidate())
+    _patch_llm(monkeypatch, make_draft_llm())
     cluster = make_cluster()
     cand, _ = RequirementAgent().draft_and_score(cluster)
     assert len(cand.quality_history) == 1
@@ -59,14 +59,14 @@ def test_draft_appends_quality_history(monkeypatch):
 
 def test_draft_route_support_for_docs_misuse_cluster(monkeypatch):
     # 簇类别全为 misuse/docs → decide_gate 走 ROUTE_SUPPORT（即便分数）
-    _patch_llm(monkeypatch, make_draft_candidate())
+    _patch_llm(monkeypatch, make_draft_llm())
     cluster = make_cluster(categories=[Category.DOCS, Category.MISUSE])
     cand, _ = RequirementAgent().draft_and_score(cluster)
     assert cand.quality.gate == GateStatus.ROUTE_SUPPORT
 
 
 def test_draft_evidence_closure_drops_illegal_refs(monkeypatch):
-    bad = make_draft_candidate()
+    bad = make_draft_llm()
     bad.evidence_refs = ["sig-001", "sig-999", "cf-01"]  # sig-999 不存在
     _patch_llm(monkeypatch, bad)
     cluster = make_cluster()
@@ -79,9 +79,8 @@ def test_draft_evidence_closure_drops_illegal_refs(monkeypatch):
 
 
 def test_draft_sets_cluster_id(monkeypatch):
-    c = make_draft_candidate()
-    c.cluster_id = "wrong"  # LLM 填错 → 代码强制对齐选中簇
-    _patch_llm(monkeypatch, c)
+    # LLM 扁平输出不含 cluster_id；代码用选中簇 id 组装，保证对齐
+    _patch_llm(monkeypatch, make_draft_llm())
     cluster = make_cluster(cid="clu-07")
     cand, _ = RequirementAgent().draft_and_score(cluster)
     assert cand.cluster_id == "clu-07"

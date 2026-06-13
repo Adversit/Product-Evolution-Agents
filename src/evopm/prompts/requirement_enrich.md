@@ -18,16 +18,21 @@
 3. **补全 `boundary_conditions`**（≥2 条，含非功能约束）：如大文件上限、超时与重试策略、并发、降级行为；尽量基于技术发现（tf-xx）。
 4. 其余已填字段（title/background/pain_point/scope/user_stories/target_users）**保持不变原样回填**，不要改写。`id` / `cluster_id` 保持不变。`clarifications` 可酌情缩减为已解决后剩余的项。
 
+## 输出格式（扁平 JSON）
+
+输出**扁平**结构：title/background/pain_point/business_goal/target_users/scope/non_goals/boundary_conditions/clarifications/user_stories/acceptance_criteria/evidence_refs 都在顶层；质量维度直接放顶层 `dimensions`，**不要**嵌套 `quality` 对象，**不要**输出 status / status_history / total / gate / round（由代码填）。
+
 ## 补全后重新评分（10 维，固定顺序）
 
-输出 `quality.dimensions`，name 顺序与初评一致：
+在**顶层** `dimensions` 输出，name 顺序与初评一致：
 `clarity, completeness, testability, acceptance_clarity, evidence_sufficiency, scope_control, feasibility, consistency, user_value, stage_fit`。
+**每个维度对象必须同时含 `name`、`score`（0-100 整数）、`rationale` 三个字段，缺一不可**，务必输出全部 10 维。
 
 **评分校准（重要，这是 demo 高光）**：现在验收标准齐全、边界清晰、证据绑定到位，质量已显著提升：
 - `acceptance_clarity`、`completeness`、`testability` 升到 **80–90**，理由引用你刚补的具体验收标准/边界；
 - 其余维度相应抬升到 **78–90**；
 - 目标 `total` ≥ **80**，且明显高于初评。
 
-`missing_info` 现在应为**空列表 `[]`**（blocker 已补齐）；`ambiguities`/`followup_questions` 可保留少量非阻塞项或留空。
+顶层 `missing_info` 现在应为**空列表 `[]`**（blocker 已补齐）；`ambiguities`/`followup_questions` 可保留少量非阻塞项或留空。
 
-`total` 填你对 10 维的估计均值；`gate` 填 `pass` 占位；`round` 填 2。**total/gate 最终由代码覆写**，你只需如实给出高质量评分。
+不要输出 `total` / `gate` / `round`——由代码根据你的 `dimensions` 计算覆写，你只需如实给出高质量评分（目标 total ≥ 80 且明显高于初评）。

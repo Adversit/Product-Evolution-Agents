@@ -18,20 +18,89 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from pydantic import BaseModel
+
 from evopm.agents.base import BaseAgent, validate_evidence_refs
 from evopm.rules import QUALITY_DIMS, decide_gate
 from evopm.schemas import (
-    Category,
+    AcceptanceCriterion,
     CompetitorFinding,
     GateStatus,
     InsightCluster,
+    QualityDimension,
     QualityReport,
     RequirementCandidate,
     TechFinding,
+    UserStory,
 )
 
 # 注入正文单条裁剪上限（spec §11.3）
 _MAX_TEXT = 800
+
+
+# 弱模型常在 list-of-objects 里漏字段（如漏 score），给默认值兜底：漏 score → 60（中性），
+# 漏 rationale → ""，避免整条结构化调用因单维缺字段而 fail。
+class DimLLM(BaseModel):
+    name: str = ""
+    score: int = 60
+    rationale: str = ""
+
+
+# 扁平 LLM 输出 schema：避免弱模型把嵌套 quality 对象 stringify、或乱填 status_history。
+# 质量评分维度与 missing_info 等拍平到顶层，code 侧再组装成 RequirementCandidate + QualityReport。
+class RequirementDraftLLM(BaseModel):
+    id: str = "req-01"
+    title: str = ""
+    background: str = ""
+    target_users: list[str] = []
+    pain_point: str = ""
+    business_goal: str = ""
+    scope: list[str] = []
+    non_goals: list[str] = []
+    boundary_conditions: list[str] = []
+    clarifications: list[str] = []
+    user_stories: list[UserStory] = []
+    acceptance_criteria: list[AcceptanceCriterion] = []
+    evidence_refs: list[str] = []
+    # 拍平的质量评分（顶层，不嵌套在 quality 里）；用宽容的 DimLLM 兜底缺字段
+    dimensions: list[DimLLM] = []
+    missing_info: list[str] = []
+    ambiguities: list[str] = []
+    followup_questions: list[str] = []
+
+
+def _assemble_candidate(
+    out: RequirementDraftLLM, *, req_id: str, cluster_id: str
+) -> RequirementCandidate:
+    """把扁平 LLM 输出组装成 RequirementCandidate（quality 由 code 包成对象）。"""
+    return RequirementCandidate(
+        id=req_id,
+        cluster_id=cluster_id,
+        title=out.title,
+        background=out.background,
+        target_users=out.target_users,
+        pain_point=out.pain_point,
+        business_goal=out.business_goal,
+        scope=out.scope,
+        non_goals=out.non_goals,
+        boundary_conditions=out.boundary_conditions,
+        clarifications=out.clarifications,
+        user_stories=out.user_stories,
+        acceptance_criteria=out.acceptance_criteria,
+        evidence_refs=out.evidence_refs,
+        quality=QualityReport(
+            total=0,
+            dimensions=[
+                QualityDimension(name=d.name, score=d.score, rationale=d.rationale)
+                for d in out.dimensions
+            ],
+            missing_info=out.missing_info,
+            ambiguities=out.ambiguities,
+            followup_questions=out.followup_questions,
+            gate=GateStatus.NEEDS_ENRICH,
+            round=0,
+        ),
+    )
 
 
 def _finding_brief(findings: list[Any]) -> list[dict[str, Any]]:
@@ -137,9 +206,9 @@ class RequirementAgent(BaseAgent):
             payload["human_supplement"] = human_supplement.strip()[:_MAX_TEXT]
         user = json.dumps(payload, ensure_ascii=False, indent=2)
 
-        candidate = self.structured_call(RequirementCandidate, user, model=model)
-        assert isinstance(candidate, RequirementCandidate)
-        candidate.cluster_id = cluster.id
+        out = self.structured_call(RequirementDraftLLM, user, model=model)
+        assert isinstance(out, RequirementDraftLLM)
+        candidate = _assemble_candidate(out, req_id=out.id or "req-01", cluster_id=cluster.id)
 
         violations: list[str] = []
         if valid_ids is not None:
@@ -188,10 +257,9 @@ class RequirementAgent(BaseAgent):
         }
         user = json.dumps(payload, ensure_ascii=False, indent=2)
 
-        enriched = self.structured_call(RequirementCandidate, user, model=model)
-        assert isinstance(enriched, RequirementCandidate)
-        enriched.id = candidate.id
-        enriched.cluster_id = cluster.id
+        out = self.structured_call(RequirementDraftLLM, user, model=model)
+        assert isinstance(out, RequirementDraftLLM)
+        enriched = _assemble_candidate(out, req_id=candidate.id, cluster_id=cluster.id)
         # 保留初评轮的 quality_history（LLM 不回填历史）
         enriched.quality_history = list(candidate.quality_history)
 
