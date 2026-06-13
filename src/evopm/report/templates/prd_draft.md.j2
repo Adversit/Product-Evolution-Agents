@@ -1,0 +1,81 @@
+# PRD 草稿{% if focus %}：{{ unconfirmed(focus.title, focus.id) }}{% endif %}
+
+> 产品：{{ product.name }} ｜ 模块：{{ product.module }}
+{% if focus %}> 需求 id：{{ focus.id }} ｜ 状态：{{ focus.status.value }}{% endif %}
+
+{% if not focus %}
+本轮未产出焦点需求，无 PRD 草稿。
+{% else %}
+
+## 背景
+
+{{ focus.background }}
+
+## 目标用户与痛点
+
+- 目标用户：{{ focus.target_users | join("、") }}
+- 痛点：{{ focus.pain_point }}
+- 业务目标：{{ focus.business_goal }}
+
+## 用户故事
+
+{% for us in focus.user_stories %}
+- {{ us.story_text }}
+  - 角色：{{ us.role }} ｜ 场景：{{ us.scenario }} ｜ 收益：{{ us.benefit }}
+{% if us.evidence_refs %}
+  - 证据：{{ us.evidence_refs | join(", ") }}
+{% endif %}
+{% endfor %}
+
+## 功能范围
+
+{% for s in focus.scope %}
+- {{ s }}
+{% else %}
+- （未明确）
+{% endfor %}
+
+## 非目标
+
+{% for ng in focus.non_goals %}
+- {{ ng }}
+{% else %}
+- （未明确）
+{% endfor %}
+
+## 边界条件
+
+{% for bc in focus.boundary_conditions %}
+- {{ bc }}
+{% else %}
+- （未明确）
+{% endfor %}
+
+## 验收标准
+
+{% set acs = solution.acceptance_criteria if solution and solution.acceptance_criteria else focus.acceptance_criteria %}
+{% for ac in acs %}
+- [{{ ac.type }}] {{ ac.text }}{% if ac.evidence_refs %} _(证据：{{ ac.evidence_refs | join(", ") }})_{% endif %}
+{% else %}
+- （待补充）
+{% endfor %}
+
+## 待澄清问题
+
+{% for q in focus.clarifications %}
+- {{ q }}
+{% else %}
+- （无）
+{% endfor %}
+
+## 证据映射
+
+> 每条需求结论对应的上游证据回查。
+
+| ref | 强度 | 来源 | 原文摘录（≤120字） |
+|---|---|---|---|
+{% for ref in focus.evidence_refs %}
+{% set c = card(ref) %}
+| `{{ c.ref }}` | {{ c.strength }} | {{ c.source }} | {{ c.excerpt }} |
+{% endfor %}
+{% endif %}

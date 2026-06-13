@@ -1,0 +1,174 @@
+# 产品机会报告（评审版）
+
+> 产品：{{ product.name }} ｜ 分析模块：{{ product.module }} ｜ 阶段：{{ product.stage }}
+> 运行模式：`{{ run_mode }}` ｜ LLM 调用次数：{{ llm_call_count }}
+
+## 执行摘要
+
+{% if focus %}
+- **焦点问题**：{{ focus.title }}
+- **痛点**：{{ focus.pain_point }}
+{% if opportunity %}
+- **建议优先级**：**{{ opportunity.priority.value }}**（机会总分 {{ "%.1f"|format(opportunity.total) }}，{{ opportunity.horizon.value }}）
+- **结论**：{{ opportunity.rationale }}
+{% endif %}
+{% else %}
+- 本轮未产出焦点需求（可能在门禁/查重阶段分流）。
+{% endif %}
+
+## 漏斗统计（过滤·查重·分流记录）
+
+| 阶段 | 数量 | 说明 |
+|---|---|---|
+| 原始信号 | {{ funnel.total_signals }} | CSV 反馈 + GitHub issues |
+| 可行动性过滤 | {{ funnel.filtered }} | 情绪/误用/信息不足，未进聚类 |
+| 信号查重并入 | {{ funnel.duplicates }} | duplicate_of 非空 |
+| 问题簇 | {{ funnel.clusters }} | 其中命中历史需求 {{ funnel.dup_clusters }} 簇（合并到已有需求） |
+| 深挖焦点 | {{ funnel.focus }} | 选中簇精评 |
+
+{% if filtered_signals %}
+### 已过滤信号
+| id | 可行动性 | 追问建议 | 原文摘录 |
+|---|---|---|---|
+{% for s in filtered_signals %}
+| {{ s.id }} | {{ s.actionability.value if s.actionability else "-" }} | {{ s.followup_question or "-" }} | {{ s.text[:60] }} |
+{% endfor %}
+{% endif %}
+
+{% set dup_clusters = clusters | selectattr("duplicate_of_existing") | list %}
+{% if dup_clusters %}
+### 合并到已有需求
+{% for c in dup_clusters %}
+- **{{ c.title }}** → `{{ c.duplicate_of_existing }}`：{{ c.dedup_reason }}
+{% endfor %}
+{% endif %}
+
+## 问题簇总览
+
+| id | 标题 | 频次 | 严重度 | 状态 | 候选需求 |
+|---|---|---|---|---|---|
+{% for c in clusters %}
+| {{ c.id }}{% if c.id == selected_cluster_id %} ⭐{% endif %} | {{ c.title }} | {{ c.frequency }} | {{ c.severity.value }} | {{ c.status.value }} | {{ c.candidate_title }} |
+{% endfor %}
+
+## 焦点需求
+
+{% if focus %}
+**{{ unconfirmed(focus.title, focus.id) }}**（{{ focus.id }}，源自簇 {{ focus.cluster_id }}）
+
+- 背景：{{ focus.background }}
+- 目标用户：{{ focus.target_users | join("、") }}
+- 痛点：{{ focus.pain_point }}
+- 业务目标：{{ focus.business_goal }}
+
+### 用户故事
+{% for us in focus.user_stories %}
+- {{ us.story_text }}{% if us.evidence_refs %} _(证据：{{ us.evidence_refs | join(", ") }})_{% endif %}
+{% endfor %}
+
+### 质量评分前后对比
+{% if quality_first and quality_last %}
+**{{ quality_first.total }} → {{ quality_last.total }}**（第 {{ quality_first.round }} 轮 → 第 {{ quality_last.round }} 轮，门禁：{{ quality_last.gate.value }}）
+
+| 维度 | 初评 | 终评 |
+|---|---|---|
+{% for dim in quality_last.dimensions %}
+{% set first_dim = quality_first.dimensions | selectattr("name", "equalto", dim.name) | first %}
+| {{ dim.name }} | {{ first_dim.score if first_dim else "-" }} | {{ dim.score }} |
+{% endfor %}
+{% else %}
+（无质量历史记录）
+{% endif %}
+{% else %}
+本轮无焦点需求。
+{% endif %}
+
+## 竞品对比（按 verdict 分组）
+
+{% for verdict, items in verdict_groups.items() %}
+{% if items %}
+### {{ verdict | upper }}
+{% for cf in items %}
+- **{{ cf.competitor }}**（{{ cf.id }}，强度 {{ cf.evidence_strength.value }}）：{{ cf.conclusion }}
+  - 启示：{{ cf.implication }}
+{% if cf.gap_description %}
+  - 差距：{{ cf.gap_description }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+## 技术方案（按成熟度）
+
+{% for maturity, items in tech_by_maturity.items() %}
+### {{ maturity }}
+{% for tf in items %}
+- **{{ tf.solution_name }}**（{{ tf.id }}，话题：{{ tf.topic }}，强度 {{ tf.evidence_strength.value }}）
+  - 契合理由：{{ tf.fit_reason }}
+  - 成本：{{ tf.cost_estimate }} ｜ 风险：{{ tf.risk }}
+{% endfor %}
+{% endfor %}
+
+## 机会评分表 + 优先级
+
+{% if opportunity %}
+**优先级 {{ opportunity.priority.value }} ｜ 视野 {{ opportunity.horizon.value }} ｜ 加权总分 {{ "%.1f"|format(opportunity.total) }}**
+
+| 维度 | 评分 | 理由 |
+|---|---|---|
+{% for sc in opportunity.scores %}
+| {{ sc.dimension }} | {{ sc.score }} | {{ sc.rationale }} |
+{% endfor %}
+
+{% if opportunity.special_types %}
+特殊类型标记：{% for st in opportunity.special_types %}`{{ st.value }}`{% if not loop.last %}、{% endif %}{% endfor %}
+{% endif %}
+{% else %}
+（未进行机会精评）
+{% endif %}
+
+## Now · Next · Later
+
+{% for horizon in ["now", "next", "later"] %}
+### {{ horizon | upper }}
+{% for r in roadmap_by_horizon[horizon] %}
+- **[{{ r.priority.value }}]** {{ r.title }}{% if r.is_focus %} ⭐{% endif %} — {{ r.one_line_reason }}
+{% else %}
+- （无）
+{% endfor %}
+{% endfor %}
+
+{% if observations %}
+## 观察项（证据不足，降权处理）
+
+{% for obs in observations %}
+- {{ obs }}
+{% endfor %}
+{% endif %}
+
+## 证据卡附录
+
+| ref | 强度 | 来源 | 原文摘录（≤120字） |
+|---|---|---|---|
+{% for c in evidence_cards %}
+| `{{ c.ref }}` | {{ c.strength }} | {{ c.source }} | {{ c.excerpt }} |
+{% endfor %}
+
+## 人工确认记录
+
+{% if human_decisions %}
+| 检查点 | 对象 | 操作 | 理由 |
+|---|---|---|---|
+{% for d in human_decisions %}
+| {{ d.checkpoint }} | {{ d.item_ref }} | {{ d.action.value }} | {{ d.reason or "-" }} |
+{% endfor %}
+{% else %}
+（无人工介入记录）
+{% endif %}
+
+{% if critic_review and critic_review.pending_confirmations %}
+### 待人工确认清单
+{% for p in critic_review.pending_confirmations %}
+- {{ p }}
+{% endfor %}
+{% endif %}
