@@ -1,0 +1,151 @@
+{
+  "decision": {
+    "requirement_id": "req-01",
+    "scores": [
+      {
+        "dimension": "pain_frequency",
+        "score": 92,
+        "rationale": "clu-01 频次达 10（最高档），用户信号覆盖大文件卡死（sig-001/sig-003）、docx 卡 0%（sig-005）、PDF 长期 pending（sig-006）、GraphRAG 队列堆积 worker 崩溃（sig-013/sig-014），几乎覆盖所有高频解析场景。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-001",
+          "sig-003",
+          "sig-005",
+          "sig-006",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "severity",
+        "score": 93,
+        "rationale": "簇严重度标记为 critical；GraphRAG 场景下 worker 崩溃后任务永久 pending，知识库无法交付，直接阻断日常工作流，属于生产阻断级故障。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "competitor_gap",
+        "score": 72,
+        "rationale": "Dify/AnythingLLM 同样面临大文件卡死（cf-02/cf-06），属行业共性痛点；但 Dify 已有三态标签+重新处理（cf-01），RAGFlow 连基础状态展示和错误反馈都缺失，存在体验层差距；不过竞品也未在架构层给出成熟方案，反而是差异化机会。",
+        "evidence_refs": [
+          "cf-01",
+          "cf-02",
+          "cf-06",
+          "cf-04"
+        ]
+      },
+      {
+        "dimension": "tech_feasibility",
+        "score": 80,
+        "rationale": "核心方案（状态机 tf-01/tf-18、心跳超时 tf-19、错误分类重试 tf-02/tf-21、结构化错误透传 tf-03/tf-22）均为 reference 级成熟实践，成本 low–medium；但幂等性保证（tf-07/tf-23）标记 high_risk 且 GraphRAG 场景复杂度高，拉低整体可行性。",
+        "evidence_refs": [
+          "tf-01",
+          "tf-18",
+          "tf-19",
+          "tf-02",
+          "tf-21",
+          "tf-03",
+          "tf-22",
+          "tf-07",
+          "tf-23"
+        ]
+      },
+      {
+        "dimension": "requirement_quality",
+        "score": 86,
+        "rationale": "需求质量评分 86 分，痛点描述清晰、场景具体（80–100MB 大文件、GraphRAG 队列堆积、docx/PDF 格式差异），技术方案调研充分，可执行性高。",
+        "evidence_refs": [
+          "req-01"
+        ]
+      },
+      {
+        "dimension": "cost",
+        "score": 75,
+        "rationale": "心跳超时检测（tf-19）和重试装饰器（tf-02/tf-21）成本为 low；状态机拆分（tf-01/tf-16）和错误透传全链路（tf-03/tf-22）为 medium；幂等性保证（tf-07/tf-23）为 high，是主要成本风险点；整体投入产出比合理，但幂等性部分需预留缓冲。",
+        "evidence_refs": [
+          "tf-19",
+          "tf-02",
+          "tf-21",
+          "tf-01",
+          "tf-16",
+          "tf-03",
+          "tf-22",
+          "tf-07",
+          "tf-23"
+        ]
+      },
+      {
+        "dimension": "business_value",
+        "score": 90,
+        "rationale": "解析是 RAG 全链路入口，解析不稳定则知识库无法交付、下游检索问答全部失效；修复后直接恢复核心产品可用性，对付费用户留存与口碑影响极大。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "strategy_fit",
+        "score": 88,
+        "rationale": "团队偏好为「提升体验」，本需求直击用户最痛的解析卡死体验；RAGFlow 以深度解析为核心差异化能力，修复稳定性可巩固技术壁垒，与产品战略高度一致。",
+        "evidence_refs": [
+          "clu-01"
+        ]
+      },
+      {
+        "dimension": "urgency",
+        "score": 90,
+        "rationale": "severity=critical + frequency=10，任务永久卡死直接阻断用户日常工作流；GraphRAG 场景队列堆积属系统性故障，不修复将持续恶化口碑。",
+        "evidence_refs": [
+          "clu-01",
+          "sig-013",
+          "sig-014"
+        ]
+      },
+      {
+        "dimension": "core_path_impact",
+        "score": 95,
+        "rationale": "解析是知识库构建的核心链路第一步——提取→OCR→分块→嵌入→索引全在此链路；该环节不稳定则整条 RAG 链路瘫痪，影响面无出其右。",
+        "evidence_refs": [
+          "clu-01",
+          "tf-16",
+          "tf-05"
+        ]
+      }
+    ],
+    "total": 86.0,
+    "priority": "P0",
+    "horizon": "now",
+    "rationale": "解析稳定性是 RAG 产品核心链路入口，频次最高（10）+严重度 critical + 多场景覆盖，且大部分修复方案为成熟工程实践（状态机/心跳/错误分类/重试），应立即启动 Now 阶段修复。",
+    "special_types": []
+  },
+  "roadmap": [
+    {
+      "cluster_id": "clu-01",
+      "title": "解析任务频繁卡死/失败，GraphRAG 与大文件场景尤甚",
+      "priority": "P0",
+      "horizon": "now",
+      "one_line_reason": "核心链路入口、频次 10/严重度 critical、竞品也未解决属差异化机会，成熟方案可快速落地。",
+      "is_focus": true
+    },
+    {
+      "cluster_id": "clu-02",
+      "title": "缺少解析进度条展示与批量上传失败反馈",
+      "priority": "Duplicate",
+      "horizon": "later",
+      "one_line_reason": "状态为 duplicate，其核心诉求（进度展示与失败反馈）已被 clu-01 焦点需求的结构化错误透传与分阶段进度方案覆盖。",
+      "is_focus": false
+    },
+    {
+      "cluster_id": "clu-03",
+      "title": "多知识库检索召回下降、引用溯源不准、表格解析退化",
+      "priority": "P1",
+      "horizon": "next",
+      "one_line_reason": "严重度 high + 频次 8，影响检索质量与用户信任，但需在解析稳定性修复（clu-01）完成后推进，避免并行引入回归风险。",
+      "is_focus": false
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "clusters": [
+    {
+      "id": "clu-01",
+      "title": "解析任务频繁卡死/失败，GraphRAG 与大文件场景尤甚",
+      "summary": "用户在多种场景遭遇解析卡死或失败：大文件（80–100MB+）长时间转圈甚至直接失败、GraphRAG 启用后任务队列堆积卡死、docx 卡在 0%、PDF 解析后长期 pending；且失败后缺乏错误原因反馈，只能反复重试或重新上传，严重影响日常交付。",
+      "signal_ids": [
+        "sig-001",
+        "sig-003",
+        "sig-005",
+        "sig-006",
+        "sig-007",
+        "sig-013",
+        "sig-014",
+        "sig-021",
+        "sig-022",
+        "sig-023"
+      ],
+      "categories": [
+        "stability",
+        "bug",
+        "ux"
+      ],
+      "severity": "critical",
+      "frequency": 10,
+      "status": "known",
+      "candidate_title": "修复解析卡死/失败问题——GraphRAG 任务队列与大文件解析优先",
+      "user_story_draft": "作为文档管理者，我希望解析任务能够稳定完成或在失败时给出明确的错误原因与可恢复操作，以便我无需反复重试和重新上传大文件。",
+      "duplicate_of_existing": null,
+      "dedup_reason": ""
+    },
+    {
+      "id": "clu-02",
+      "title": "缺少解析进度条展示与批量上传失败反馈",
+      "summary": "用户无法看到解析进行到哪一步、进度百分比或预计完成时间，界面仅有转圈图标；批量上传时也无法得知哪些文件解析失败，体验差且影响排障效率。",
+      "signal_ids": [
+        "sig-004",
+        "sig-015",
+        "sig-016",
+        "sig-017"
+      ],
+      "categories": [
+        "missing_feature",
+        "ux"
+      ],
+      "severity": "high",
+      "frequency": 4,
+      "status": "duplicate",
+      "candidate_title": "文档列表展示解析进度条与批量上传分项失败标记",
+      "user_story_draft": "作为文档管理者，我希望在文档列表中看到每个文件的解析进度百分比以及失败文件的具体标记，以便我了解整体解析进展并及时重试失败项。",
+      "duplicate_of_existing": "ex-01",
+      "dedup_reason": "本簇核心诉求（解析进度百分比 / 进度条展示）与 ex-01「支持解析进度百分比展示」(status=in_roadmap) 实质相同。其中 sig-015（批量上传失败不可见）与 ex-02「解析失败重试与错误详情」部分重叠，建议在 ex-01 开发时一并覆盖批量失败标记。"
+    },
+    {
+      "id": "clu-03",
+      "title": "多知识库检索召回下降、引用溯源不准、表格解析退化",
+      "summary": "跨多知识库检索时召回质量明显下降并偶发 InfinityException(3052)；回答引用标注位置与原文不匹配、溯源不可信；表格解析准确率较 0.23.1 版本退化（单元格合并/丢失、数据值错误）。三者共同导致回答结果不可信、无法向客户交付。",
+      "signal_ids": [
+        "sig-009",
+        "sig-010",
+        "sig-011",
+        "sig-012",
+        "sig-024",
+        "sig-025",
+        "sig-026",
+        "sig-027"
+      ],
+      "categories": [
+        "bug"
+      ],
+      "severity": "high",
+      "frequency": 8,
+      "status": "known",
+      "candidate_title": "优化多知识库检索召回、引用溯源准确性与表格解析精度",
+      "user_story_draft": "作为知识库使用者，我希望多知识库检索能准确召回关键文档、引用能精确对应原文位置且表格数据解析正确，以便我可以信任回答结果并向客户交付。",
+      "duplicate_of_existing": null,
+      "dedup_reason": ""
+    }
+  ]
+}

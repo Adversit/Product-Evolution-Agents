@@ -1,0 +1,100 @@
+{
+  "findings": [
+    {
+      "id": "cf-01",
+      "competitor": "Dify",
+      "research_question": "竞品是否提供解析进度的实时可视化（如进度百分比、当前阶段提示）以及解析失败后的用户侧反馈（错误码、原因描述、一键重试）？",
+      "has_solved": true,
+      "conclusion": "Dify 的文档列表提供「处理中 / 可用 / 错误」三种状态标签，长文档批量处理时有进度提示，失败文档标红并支持重新处理。但材料未提及细粒度的步骤级进度（如'正在提取文本→正在分段→正在嵌入'的阶段提示）或具体错误码/错误原因描述，更多是文件级的状态展示。",
+      "verdict": "adopt",
+      "gap_description": "RAGFlow 在解析状态展示和失败反馈方面不如 Dify 直观，缺乏面向用户的清晰状态标签和一键重试入口。但 Dify 也仅做到文件级状态，步骤级进度双方均有缺口。",
+      "implication": "Dify 的三态标签（处理中/可用/错误）+ 标红 + 重新处理是轻量但用户体感好的设计，RAGFlow 应至少对标此基础层：确保每个文档有明确的状态展示、失败时给出可操作的重新处理入口。步骤级进度可视化则是双方共同缺口，可作为 RAGFlow 的差异化突破点。",
+      "source_url": "",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-02",
+      "competitor": "Dify",
+      "research_question": "主流 RAG 竞品在处理 80–100MB+ 大文件解析时，是否有文件大小上限、分片上传、流式解析等机制来避免卡死或 OOM？失败后是否给出明确的错误原因与重试策略？",
+      "has_solved": false,
+      "conclusion": "材料明确指出 Dify 在'超大文件或海量文档批处理时偶发处理缓慢、卡在处理中'，说明 Dify 同样面临大文件/批量场景的卡死问题。材料未提及 Dify 有文件大小上限、分片上传、流式解析或 OOM 防护机制，也未提及失败时给出具体错误原因。高质量索引（Q&A 模式、父子分段）还会显著增加 token 与时间成本，进一步加剧卡死风险。",
+      "verdict": "avoid",
+      "gap_description": "Dify 在大文件处理上与 RAGFlow 面临同类问题，不构成差异化优势。",
+      "implication": "大文件解析卡死是行业共性问题，Dify 尚未给出成熟方案，RAGFlow 不必跟随竞品做简单的状态展示修复，而应在大文件解析架构层面（如流式分块、内存控制、超时熔断）做差异化投入，这才是核心竞争壁垒。",
+      "source_url": "",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-03",
+      "competitor": "Dify",
+      "research_question": "竞品在启用 GraphRAG / 知识图谱构建时，任务队列是如何调度的？是否有并发数控制、优先级队列、超时熔断、失败隔离等机制来防止任务堆积卡死整个系统？",
+      "has_solved": null,
+      "conclusion": "提供的 Dify 调研材料完全未涉及 GraphRAG / 知识图谱构建功能或任务队列调度机制（并发控制、优先级队列、超时熔断、失败隔离等）。无法从材料判断 Dify 是否支持 GraphRAG，也无法判断其任务队列架构。",
+      "verdict": "watch",
+      "gap_description": "",
+      "implication": "Dify 材料未覆盖 GraphRAG 与任务队列调度，无法形成有效对标。RAGFlow 的 GraphRAG 卡死问题需要在自身架构层面做设计决策（如独立 worker 池、并发上限、失败隔离），而非参考 Dify 的做法。",
+      "source_url": "",
+      "evidence_strength": "no_direct"
+    },
+    {
+      "id": "cf-04",
+      "competitor": "Open WebUI",
+      "research_question": "竞品是否提供解析进度的实时可视化（如进度百分比、当前阶段提示）以及解析失败后的用户侧反馈（错误码、原因描述、一键重试）？",
+      "has_solved": false,
+      "conclusion": "材料明确指出 Open WebUI 的文档上传处理'较快但偏黑盒，没有面向用户的细粒度解析进度或步骤可视化'。用户在上传后无法获知解析处于哪个阶段、预计多久完成，也缺乏失败后的结构化反馈（错误码、原因描述）。其 RAG 能力定位为本地对话前端的附属功能，解析体验不是产品重点。",
+      "verdict": "avoid",
+      "gap_description": "Open WebUI 在解析进度可视化方面明显弱于 RAGFlow 需求预期，不构成可对标的能力。",
+      "implication": "Open WebUI 在解析进度可视化方面是反面参照——用户上传后处于黑盒状态、无法感知进度或失败原因。RAGFlow 不应跟随这种设计，反而应将其作为'避免成为这样'的警示，优先补齐步骤级进度展示和结构化错误反馈。",
+      "source_url": "",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-05",
+      "competitor": "Open WebUI",
+      "research_question": "竞品针对不同文件类型（PDF、DOCX、Excel 等）的解析失败率是否有差异化处理？例如是否对特定格式有 fallback 解析器、预处理转换等容错策略？",
+      "has_solved": true,
+      "conclusion": "材料提到 Open WebUI 支持接入外部内容提取引擎（如 Apache Tika、Docling）来增强对 PDF/Office 文档的解析，默认使用内置的简单文本提取管线。这种'可插拔解析引擎'的架构允许用户根据文档类型选择不同引擎，但材料未提及系统层面的自动 fallback（如主解析器失败后自动切换备用解析器）或预处理转换（如 docx→PDF 再解析）策略，更多依赖用户手动配置引擎选择。",
+      "verdict": "watch",
+      "gap_description": "RAGFlow 在深度文档解析（版面还原、表格提取）上有明显优势，但'可插拔解析引擎'的架构灵活性值得关注——Open WebUI 允许用户接入 Tika/Docling 作为替代或增强引擎。",
+      "implication": "Open WebUI 的可插拔引擎思路有参考价值：RAGFlow 可以考虑在自身深度解析引擎之外，提供 fallback 解析器接口（如内置引擎失败时自动降级到轻量提取器），形成多层容错机制。但当前优先级应低于核心卡死问题的修复。",
+      "source_url": "",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-06",
+      "competitor": "AnythingLLM",
+      "research_question": "主流 RAG 竞品在处理 80–100MB+ 大文件解析时，是否有文件大小上限、分片上传、流式解析等机制来避免卡死或 OOM？失败后是否给出明确的错误原因与重试策略？",
+      "has_solved": false,
+      "conclusion": "材料明确指出 AnythingLLM 在'大文件或大批量文档嵌入耗时较长且进度反馈粗'，与 RAGFlow 面临同样的大文件性能瓶颈。其文档处理使用'统一的文本提取 + 分块管线，参数相对固定'，没有针对大文件的差异化处理机制。材料未提及文件大小上限、流式解析、OOM 防护或失败后的结构化错误反馈。",
+      "verdict": "avoid",
+      "gap_description": "AnythingLLM 在大文件处理上与 RAGFlow 面临同类问题且反馈更粗，不构成差异化优势。",
+      "implication": "AnythingLLM 的大文件处理能力同样薄弱，且反馈更粗糙（'进度反馈粗'），说明大文件解析卡死是行业共性痛点而非 RAGFlow 独有缺陷。RAGFlow 应利用自身在深度解析上的技术积累，率先在此场景给出系统级解决方案（流式分块、内存上限、渐进式进度），形成竞争壁垒。",
+      "source_url": "",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-07",
+      "competitor": "AnythingLLM",
+      "research_question": "竞品是否提供解析进度的实时可视化（如进度百分比、当前阶段提示）以及解析失败后的用户侧反馈（错误码、原因描述、一键重试）？",
+      "has_solved": false,
+      "conclusion": "材料指出 AnythingLLM 将上传与嵌入分为两步，界面会显示文档是否已嵌入以及文件级嵌入进度，但'缺少解析步骤级的细粒度可视化'。用户能看到'某文件正在嵌入'但无法得知当前解析处于哪个具体阶段、预计完成时间、或失败的具体原因。文件级进度有但步骤级缺失，与 RAGFlow 现状类似。",
+      "verdict": "watch",
+      "gap_description": "RAGFlow 与 AnythingLLM 在解析步骤级可视化上处于同一水平线，双方均有缺失。",
+      "implication": "AnythingLLM 也只做到了文件级进度，步骤级可视化同样是行业空白。RAGFlow 若能率先实现解析步骤级进度（如'提取文本→识别版面→提取表格→语义分段→嵌入'的阶段展示），将在用户体验上形成差异化优势。这是投入产出比较高的方向。",
+      "source_url": "",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "cf-08",
+      "competitor": "AnythingLLM",
+      "research_question": "竞品在解析任务的架构设计上，是否采用了异步任务队列 + 任务状态机（如 Celery、BullMQ 等独立 worker 池）来隔离解析压力，而非在主进程中同步阻塞执行？",
+      "has_solved": null,
+      "conclusion": "材料描述 AnythingLLM 的上传与嵌入分两步执行，隐含一定的异步处理特征（先上传文档到文档管理器，再选择性嵌入到工作区），但未明确提及是否使用了独立 worker 池、任务状态机或消息队列（如 Celery、BullMQ）。无法从材料判断其解析任务是否与主进程隔离。",
+      "verdict": "watch",
+      "gap_description": "",
+      "implication": "AnythingLLM 的'上传→嵌入'两步分离设计隐含了任务解耦思路，但材料不足以判断其架构细节。RAGFlow 在任务队列架构设计上需自行决策：采用独立 worker 池 + 状态机是业界处理此类问题的标准方向，可参考但不需依赖竞品验证。",
+      "source_url": "",
+      "evidence_strength": "weak"
+    }
+  ]
+}

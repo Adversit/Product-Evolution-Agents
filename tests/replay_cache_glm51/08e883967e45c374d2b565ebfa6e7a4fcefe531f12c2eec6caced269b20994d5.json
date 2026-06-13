@@ -1,0 +1,290 @@
+{
+  "findings": [
+    {
+      "id": "tf-01",
+      "topic": "stability",
+      "solution_name": "解析状态机 + 心跳超时检测机制",
+      "maturity": "reference",
+      "fit_reason": "调研问题 Q1/Q3 的核心方案：材料指出当前实现把多步解析（提取/OCR/分块/嵌入/索引）压缩成单一「解析中」态，无法区分「卡住」与「在跑」。引入分阶段状态枚举 + worker 心跳时间戳 + 超时阈值判定（超阈值无心跳→标记疑似卡住），可直接解决 GraphRAG 任务队列中 worker 崩溃后任务永久 pending 的问题。状态机是成熟工程实践，有大量参考实现可借鉴。",
+      "cost_estimate": "medium — 主要改动在 task_executor 侧拆分解析阶段并写入心跳/进度，需扩展状态表数据模型，但不需要引入新中间件",
+      "risk": "心跳超时阈值需调参：过短会误杀正常大文件解析（OCR/嵌入阶段耗时长），过长则失去卡死检测意义；需按文档类型和文件大小设置动态阈值",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-02",
+      "topic": "stability",
+      "solution_name": "解析失败重试装饰器（指数退避 + 错误分类）",
+      "maturity": "reference",
+      "fit_reason": "直接解决 Q4「失败后用户无反馈、无自动重试」：材料提出对瞬时错误（网络抖动、依赖 5xx、超时）做有限次指数退避自动重试，对确定性错误（格式不支持、文件损坏）直接落 failed + 原因码。这对 GraphRAG 场景下因嵌入/向量库抖动导致的间歇性失败尤为有效，避免用户反复手动重试。",
+      "cost_estimate": "low — 核心是给解析任务包一层错误分类 + 退避重试装饰器，不涉及架构级改动",
+      "risk": "重试必须幂等：若之前的解析已部分写入分块/索引，重试会造成脏数据或重复记录；需先实现分块/索引的 upsert 或事务回滚机制作为前置条件",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-03",
+      "topic": "stability",
+      "solution_name": "结构化错误码 + 失败原因透传前端",
+      "maturity": "reference",
+      "fit_reason": "解决 Q4「错误链路断裂」：材料指出当前失败后不记录结构化原因，错误链路在「异常捕获→存储→前端展示」环节断裂。建议每次失败写入结构化错误（错误类型、阶段、message、可重试标志），前端展示原因并提供手动重试入口。这能让用户看到「OCR 超时」「格式不支持」等具体原因而非笼统的「解析失败」，大幅减少无效重试。",
+      "cost_estimate": "medium — 需扩展状态数据模型存错误详情字段，并贯通 task_executor→后端 API→前端展示全链路",
+      "risk": "错误分类体系需要设计完整，覆盖格式不支持、OCR 超时、OOM、依赖服务抖动等多类错误；分类不准会导致可重试错误被跳过或不可重试错误浪费重试资源",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-04",
+      "topic": "stability",
+      "solution_name": "分块预览解析作为大文件前置验证",
+      "maturity": "experimental",
+      "fit_reason": "对 Q2 大文件解析失败有间接缓解作用：材料提出在正式全量解析前对前若干页/前 N 个分块做预览解析（仅提取+分块，不做嵌入），可提前发现格式问题或解析器异常。对 80–100MB+ 大文件，预览解析若失败可避免浪费全量解析的资源投入，同时给用户提前调整参数的机会。但材料未直接讨论大文件场景的内存/超时处理，适用性需验证。",
+      "cost_estimate": "medium — 需实现预览解析逻辑（截取部分内容做提取+分块）及前端交互，但复用现有提取/分块代码，不引入新依赖",
+      "risk": "预览解析成功不代表全量解析一定成功——大文件的 OOM 和超时问题可能在全量阶段才暴露；预览可能给用户虚假的安全感",
+      "source_url": "mock://本地材料-分块预览",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "tf-05",
+      "topic": "bug",
+      "solution_name": "解析中间状态压缩为单一态——根因定位",
+      "maturity": "experimental",
+      "fit_reason": "对 Q1/Q3 的根因分析：材料明确指出当前实现把「uploaded→queued→parsing(提取/OCR/分块/嵌入/索引)→done|failed」的完整流程压缩成单一「解析中」态，导致 worker 崩溃后状态机无法推进到 failed，任务永久卡在 pending。这是 GraphRAG 场景下大文件解析卡在 0% 的直接根因之一——缺少阶段级状态上报就无法检测某一环节的停滞。定位为 bug 而非 feature，应在修复优先级中靠前。",
+      "cost_estimate": "medium — 需要将 task_executor 内的解析流程拆分为独立可上报的阶段，每阶段写入当前步骤名和进度，改动集中在解析执行器层",
+      "risk": "阶段拆分后各阶段间的状态转换需要严格保证一致性，防止出现「状态已推进但数据未写入」的中间态导致后续阶段读取到不完整数据",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-06",
+      "topic": "bug",
+      "solution_name": "失败后无结构化错误记录——掩盖真实问题",
+      "maturity": "experimental",
+      "fit_reason": "对 Q4 根因分析：材料指出当前失败后既不记录结构化原因也无自动重试，用户只能手动反复重试，这会掩盖真实问题（如持续的 OOM、依赖服务故障），使开发者无法从日志中定位故障根因。引入结构化错误记录是修复这一 bug 的基础——没有错误分类和原因码，无法区分「需要改解析参数」和「需要扩容内存」两种截然不同的修复路径。",
+      "cost_estimate": "low — 核心是在失败时捕获异常并分类写入错误字段（错误类型/阶段/message/可重试标志），改动范围在异常处理层",
+      "risk": "异常捕获需要覆盖全面——如果某些失败路径未被 try/catch 包裹（如 worker 进程被 OOM Killer 直接杀死），结构化错误记录仍然无法生效，需配合进程级监控",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-07",
+      "topic": "bug",
+      "solution_name": "重试幂等性缺失风险——重复写入脏数据",
+      "maturity": "high_risk",
+      "fit_reason": "对 Q4 的风险前置分析：材料明确警告重试需幂等，避免重复写入分块/索引造成脏数据。如果直接引入自动重试而不先确保幂等性，GraphRAG 场景下的图谱构建（实体抽取、关系建立）更容易因重复执行产生重复节点和边，污染图谱质量。这是一个在引入重试机制前必须解决的潜在 bug。",
+      "cost_estimate": "high — 需要实现分块/索引/图谱构建的幂等写入（upsert 或先删后建），GraphRAG 场景下幂等性设计更复杂，涉及实体去重和关系合并",
+      "risk": "幂等实现不当会导致重试后数据不一致（部分旧数据残留 + 部分新数据写入），比不重试更难排查；GraphRAG 图谱节点的幂等合并逻辑尤其复杂",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-08",
+      "topic": "bug",
+      "solution_name": "rerank/混合检索引入回归风险",
+      "maturity": "unsuitable",
+      "fit_reason": "本问题簇聚焦的是「解析卡死/失败」，rerank 与混合检索属于检索质量优化范畴，与解析稳定性无直接关联。材料中关于 rerank 的讨论也未涉及解析阶段的任何问题。强行在此簇中讨论检索优化会分散修复焦点，不适合当前需求。",
+      "cost_estimate": "high — 改动检索打分层与模型适配层，与本簇无关",
+      "risk": "与当前「修复解析卡死」的核心目标不匹配，引入检索变更反而增加系统不稳定性风险，且核心模块改动需谨慎评估对既有召回的回归影响",
+      "source_url": "mock://本地材料-rerank与混合检索召回",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-09",
+      "topic": "ux",
+      "solution_name": "分阶段进度条 + 步骤名展示",
+      "maturity": "reference",
+      "fit_reason": "对 Q3 用户体验改进：材料指出当前前端只能轮询一个布尔/枚举状态，用户无法判断「卡住」还是「在跑」。改进后在 task_executor 侧把解析拆成可上报的阶段（提取/OCR/分块/嵌入/索引），前端按阶段渲染进度条与步骤名，并显示「已处理 chunk/总 chunk」进度。这直接缓解用户看到任务卡在 0% 的焦虑，也是判断是否真卡死的辅助手段。",
+      "cost_estimate": "medium — 后端需扩展状态表存储阶段进度，前端需实现分步骤进度条组件；两端需协调进度数据格式",
+      "risk": "进度计算依赖「总 chunk 数」的预判，但某些格式在解析完成前无法准确预估总 chunk 数，可能导致进度条跳跃或不准",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-10",
+      "topic": "ux",
+      "solution_name": "失败原因展示 + 手动重试入口",
+      "maturity": "reference",
+      "fit_reason": "对 Q4 用户体验改进：材料建议每次失败写入结构化错误后，前端展示原因并提供「手动重试」入口。当前用户缺乏错误原因反馈、只能盲目重试。展示「OCR 超时，请重试」「格式不支持，请转换格式」等具体原因后，用户可针对性处理，大幅减少无效重试带来的负面体验。",
+      "cost_estimate": "low — 前端增加错误原因展示区域和重试按钮，后端透传结构化错误字段即可，改动集中在 UI 层",
+      "risk": "错误原因文案需要用户友好化处理，原始异常 message 可能包含技术细节不适合直接展示；需设计错误码到用户可读文案的映射表",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-11",
+      "topic": "ux",
+      "solution_name": "引用溯源高亮跳转",
+      "maturity": "unsuitable",
+      "fit_reason": "引用溯源属于检索/问答阶段的体验优化，与本簇「解析卡死/失败」无关。材料虽提到解析阶段需记录 chunk 定位信息（页码/偏移/bbox），但这是为引用溯源服务的，不能解决解析阶段的稳定性问题。在当前优先修复解析稳定性的语境下不适合纳入。",
+      "cost_estimate": "high — 需贯通解析-检索-前端全链路记录和透传定位信息，改动面广",
+      "risk": "与当前修复解析卡死的核心目标不匹配，分散开发资源；且改动面广，在系统不稳定时引入更大范围的变更有风险",
+      "source_url": "mock://本地材料-引用溯源",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-12",
+      "topic": "RAG 检索质量",
+      "solution_name": "混合检索（BM25+向量）+ reranker",
+      "maturity": "mature",
+      "fit_reason": "混合检索与 rerank 是检索质量优化方案，属于 mature 能力。但与当前问题簇「解析卡死/失败」无直接关联——检索质量优化不能解决解析阶段的 worker 崩溃、OOM、超时等问题。仅当解析稳定性修复完成后再考虑检索质量提升时才有价值。",
+      "cost_estimate": "medium — 增加一次 reranker 模型推理，延迟与算力成本可通过限制重排候选数控制",
+      "risk": "在解析稳定性未解决前引入检索层变更，会增加系统整体复杂度和排障难度；核心模块改动需谨慎评估对既有召回的回归影响",
+      "source_url": "mock://本地材料-rerank与混合检索召回",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-13",
+      "topic": "RAG 检索质量",
+      "solution_name": "多知识库检索结果归一化",
+      "maturity": "unsuitable",
+      "fit_reason": "多知识库分数归一化解决的是「多库检索时某库分数压制其他库导致漏召回」的问题，与解析任务卡死/失败完全无关。在当前簇中讨论此方案属于偏题。",
+      "cost_estimate": "medium — 需在检索打分层实现多库结果统一归一化逻辑",
+      "risk": "与当前需求完全不匹配，不应在解析稳定性修复的工期内纳入",
+      "source_url": "mock://本地材料-rerank与混合检索召回",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-14",
+      "topic": "RAG 检索质量",
+      "solution_name": "分块预览提升召回质量可解释性",
+      "maturity": "reference",
+      "fit_reason": "分块预览方案可间接提升召回质量（让用户提前验证分块效果），但与「解析卡死/失败」的核心问题仅存在弱关联——预览解析本身也可能触发卡死/失败问题。如果预览解析复用现有解析逻辑而未先修复稳定性，预览功能可能同样卡住。应作为稳定性修复后的后续优化项。",
+      "cost_estimate": "medium — 需实现预览解析逻辑及前端交互，复用现有提取/分块代码",
+      "risk": "预览解析复用当前不稳定的解析路径，若不先修复底层稳定性，预览功能也会卡住/失败，反而增加用户挫败感",
+      "source_url": "mock://本地材料-分块预览",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "tf-15",
+      "topic": "文档解析",
+      "solution_name": "解析失败根因分类（OOM/超时/格式/依赖抖动）",
+      "maturity": "reference",
+      "fit_reason": "对 Q2/Q5 直接相关：材料列举了解析失败的多种原因——格式不支持、OCR 超时、内存不足（OOM）、依赖服务（嵌入/向量库）抖动。这为设计错误分类体系提供了基础框架。对大文件（80–100MB+）场景，OOM 和 OCR 超时是高概率失败点；对特定格式（docx/PDF），格式不支持或解析器异常是常见原因。按此分类设计降级策略（如 docx→PDF 转换再解析）具有参考价值。",
+      "cost_estimate": "medium — 需在解析各环节增加异常捕获与分类，并设计降级逻辑（如格式转换备用解析器）",
+      "risk": "降级策略（如 docx 转 PDF 再解析）可能引入格式损失（样式/表格/图片丢失），需评估转换后的解析质量是否可接受；且转换本身也可能失败或超时",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-16",
+      "topic": "文档解析",
+      "solution_name": "解析流程分阶段拆分（提取→OCR→分块→嵌入→索引）",
+      "maturity": "reference",
+      "fit_reason": "对 Q1/Q3 直接相关：材料提出在 task_executor 侧把解析拆成可上报的阶段。当前单一「解析中」态下，任何一环卡住都会表现为整个任务卡死。分阶段拆分后，可以精确定位卡在哪个环节（如 OCR 阶段超时 vs 嵌入阶段向量库不可用），并为每个阶段设置独立的超时阈值和重试策略。",
+      "cost_estimate": "medium — 改动集中在 task_executor 解析流程，需将各步骤拆分为独立可上报阶段，并设计阶段间数据传递机制",
+      "risk": "阶段间需保证数据一致性和传递完整性——如提取阶段产出的文本需完整传递给分块阶段，中间态管理增加复杂度；GraphRAG 额外有实体抽取/关系构建阶段，拆分后阶段更多",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-17",
+      "topic": "文档解析",
+      "solution_name": "分块预览降低大文件全量解析返工率",
+      "maturity": "experimental",
+      "fit_reason": "对 Q2 间接相关：材料提出预览只跑提取+分块两步不做嵌入，成本可控。对大文件场景，若预览阶段就发现解析异常（如提取失败、分块结果异常），可避免直接触发昂贵的全量解析（含 OCR/嵌入/索引）。但材料未讨论大文件预览本身的内存占用问题，对 80–100MB 文件的预览是否真的「轻量」需验证。",
+      "cost_estimate": "low — 复用现有提取+分块逻辑，限制预览范围为前若干页/N 个分块",
+      "risk": "大文件即使只预览前几页，提取阶段仍需读取整个文件（如 PDF 需解析全文结构），内存占用不一定显著降低；预览的「轻量」假设对大文件可能不成立",
+      "source_url": "mock://本地材料-分块预览",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "tf-18",
+      "topic": "上传状态机",
+      "solution_name": "完整解析状态枚举设计（uploaded→queued→parsing[分步]→done|failed）",
+      "maturity": "reference",
+      "fit_reason": "对 Q3 核心方案：材料定义了文档从上传到可问答的完整状态流转。当前实现缺少中间态的细粒度状态，导致无法检测卡住。设计完整的状态枚举（含分步 parsing 子状态：extracting/ocr/chunking/embedding/indexing）是状态机改造的基础，也是超时检测和阶段进度上报的前提。",
+      "cost_estimate": "medium — 需设计状态枚举、在 task_executor 各步骤写入状态转换、后端 API 透传状态、前端渲染",
+      "risk": "状态枚举需向前兼容——已有的任务记录可能处于旧状态格式，需设计兼容映射；新增的中间态需要确保不破坏现有的状态查询逻辑",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-19",
+      "topic": "上传状态机",
+      "solution_name": "Worker 心跳 + 超时阈值自动判定卡死",
+      "maturity": "reference",
+      "fit_reason": "对 Q1/Q3 直接相关：材料指出关键点是需要「最后心跳时间」字段，配合超时判定（超过阈值无心跳→标记疑似卡住）。这是检测 GraphRAG 任务队列中 worker 崩溃后任务永久 pending 的核心机制。心跳可由 task_executor 在每个解析阶段定期写入，后端定时扫描超时任务并标记为疑似卡死/自动重试。",
+      "cost_estimate": "low — 核心是增加心跳时间戳字段 + 一个定时扫描任务（cron 或 celery beat），不引入新中间件",
+      "risk": "心跳频率和超时阈值需平衡——频率过高增加数据库写入压力（尤其大批量并发解析时），阈值过长则卡死检测不及时；建议按文件大小/文档类型动态设置阈值",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-20",
+      "topic": "上传状态机",
+      "solution_name": "阶段进度持久化（已处理 chunk/总 chunk + 当前步骤名）",
+      "maturity": "experimental",
+      "fit_reason": "对 Q3 辅助方案：材料建议为每阶段写入进度（已处理 chunk/总 chunk、当前步骤名、worker 心跳时间戳），后端通过状态表或消息存储阶段进度。这对大文件解析尤其有价值——用户能看到「嵌入阶段：已处理 1200/3500 chunk」而非笼统的「解析中」。但材料未讨论进度持久化的写入频率和存储方案（数据库 vs Redis vs 消息队列），实现细节需进一步设计。",
+      "cost_estimate": "medium — 需设计进度数据存储方案、写入频率控制、前端轮询/SSE/WebSocket 推送机制",
+      "risk": "高频进度写入（如每处理一个 chunk 更新一次）可能成为性能瓶颈，尤其在大批量并发解析时；需设计批量/节流写入策略",
+      "source_url": "mock://本地材料-上传与解析状态机",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "tf-21",
+      "topic": "失败重试",
+      "solution_name": "可重试 vs 不可重试错误分类 + 指数退避自动重试",
+      "maturity": "reference",
+      "fit_reason": "对 Q4 核心方案：材料明确提出分类策略——对瞬时错误（网络抖动、依赖 5xx、超时）做有限次指数退避自动重试，对确定性错误（格式不支持、文件损坏）直接落 failed + 原因码不浪费重试。这是解析失败重试的标准做法，可直接落地。对 GraphRAG 场景，嵌入/向量库抖动属于典型瞬时错误，自动重试可显著降低失败率。",
+      "cost_estimate": "low — 核心是错误分类 + 退避重试装饰器，不涉及架构改动；退避逻辑可用 tenacity 等成熟库实现",
+      "risk": "错误分类的准确性是关键——若将确定性错误误分类为可重试，会浪费重试次数和时间；反之将瞬时错误误判为不可重试，用户需手动干预",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-22",
+      "topic": "失败重试",
+      "solution_name": "结构化错误数据模型扩展",
+      "maturity": "reference",
+      "fit_reason": "对 Q4 基础设施：材料建议每次失败写入结构化错误（错误类型、阶段、message、可重试标志）。这是自动重试和前端错误展示的数据基础。当前缺少结构化错误存储导致错误链路断裂，用户无法获知失败原因。扩展数据模型增加错误详情字段是打通「异常捕获→存储→前端展示」链路的第一步。",
+      "cost_estimate": "medium — 需扩展任务/文档状态表增加错误详情字段（error_type/error_stage/error_message/retryable），并贯通写入→查询→展示链路",
+      "risk": "数据模型变更需考虑数据库迁移和向后兼容；已有的历史失败记录无结构化错误信息，前端展示需做兼容处理",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-23",
+      "topic": "失败重试",
+      "solution_name": "重试幂等性保证（分块/索引 upsert + 事务回滚）",
+      "maturity": "high_risk",
+      "fit_reason": "对 Q4 前置依赖：材料明确警告重试需幂等，避免重复写入分块/索引造成脏数据。这是引入自动重试前必须解决的前提——否则重试会重复创建分块、重复写入向量索引，GraphRAG 场景下还会产生重复的实体节点和关系边。幂等性保证是整个重试机制的安全基石。",
+      "cost_estimate": "high — 需实现分块/索引/图谱的幂等写入逻辑（upsert 或先删后建），GraphRAG 图谱幂等尤其复杂",
+      "risk": "幂等实现是最关键的难点——分块 upsert 需要稳定的 chunk ID 生成策略；图谱幂等需实体去重和关系合并逻辑；实现不当比不重试更危险（数据不一致更难排查）",
+      "source_url": "mock://本地材料-解析失败重试策略",
+      "evidence_strength": "moderate"
+    },
+    {
+      "id": "tf-24",
+      "topic": "chunk preview",
+      "solution_name": "预览解析（仅提取+分块）降低大文件全量解析风险",
+      "maturity": "experimental",
+      "fit_reason": "对 Q2 间接相关：材料提出预览只跑提取+分块两步不做嵌入，成本可控。对大文件场景，预览解析可作为全量解析前的「冒烟测试」——若提取阶段就失败（格式异常/内存不足），可避免浪费嵌入和索引资源。但材料未讨论大文件预览的内存占用，且预览成功不代表全量解析一定成功，缓解效果有限。",
+      "cost_estimate": "low — 复用现有提取+分块逻辑，限制预览范围；不引入新依赖",
+      "risk": "大文件预览仍需读取完整文件进行结构解析，内存占用可能并不显著低于全量解析的前几步；预览的「低成本」假设对 80–100MB 文件需验证",
+      "source_url": "mock://本地材料-分块预览",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "tf-25",
+      "topic": "chunk preview",
+      "solution_name": "按文档类型的分块模板预览",
+      "maturity": "reference",
+      "fit_reason": "对 Q5 弱相关：材料提到预览与「按文档类型的 chunking 模板」天然契合。不同格式（PDF/docx/PPT）适用不同分块策略，预览可让用户确认分块模板是否适合当前文档。这间接减少因分块参数不当导致的「解析后效果差→重新解析」循环，降低重复解析的频率。竞品 Dify 有成熟先例可参考。",
+      "cost_estimate": "medium — 需实现按文档类型的分块模板配置 + 预览解析 + 前端模板选择交互",
+      "risk": "分块模板预览不能解决解析阶段的卡死/OOM 问题，仅优化分块参数选择；在解析稳定性未修复前，预览功能本身也可能卡住",
+      "source_url": "mock://本地材料-分块预览",
+      "evidence_strength": "weak"
+    },
+    {
+      "id": "tf-26",
+      "topic": "chunk preview",
+      "solution_name": "竞品 Dify 分段预览参考实现",
+      "maturity": "reference",
+      "fit_reason": "对 Q5 参考价值：材料提到 Dify 在创建知识库时提供分段预览，让用户先看少量样例分块再决定参数。这为 RAGFlow 实现类似功能提供了可借鉴的产品形态和技术参考。但 Dify 的预览是否针对大文件场景做过优化、其实现是否适配 GraphRAG 的特殊分块需求，材料未涉及，需进一步调研。",
+      "cost_estimate": "medium — 参考 Dify 实现需适配 RAGFlow 现有架构，包括前端组件和后端预览接口",
+      "risk": "直接照搬 Dify 的预览设计可能不适配 RAGFlow 的解析架构（尤其 GraphRAG 的图谱构建流程）；需评估 RAGFlow 现有解析器是否支持「部分解析」模式",
+      "source_url": "mock://本地材料-分块预览",
+      "evidence_strength": "weak"
+    }
+  ]
+}

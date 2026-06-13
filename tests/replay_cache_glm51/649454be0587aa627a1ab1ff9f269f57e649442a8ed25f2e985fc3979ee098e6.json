@@ -1,0 +1,274 @@
+{
+  "signals": [
+    {
+      "id": "sig-001",
+      "module_guess": "文档解析（大文件）",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-002",
+      "module_guess": "文档解析",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "insufficient",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": "能否提供文档类型、页数以及服务器配置（CPU/内存）信息？是否启用了 OCR 或 GraphRAG？"
+    },
+    {
+      "id": "sig-003",
+      "module_guess": "文档解析错误反馈",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-004",
+      "module_guess": "文档解析进度展示",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-005",
+      "module_guess": "文档解析（大文件/断点续传）",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-006",
+      "module_guess": "文档解析错误反馈",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-003",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-007",
+      "module_guess": "GraphRAG 解析任务队列",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-008",
+      "module_guess": "检索召回",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "insufficient",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": "请提供具体的问答示例、知识库配置（embedding 模型、chunk 策略）以便排查召回质量问题。"
+    },
+    {
+      "id": "sig-009",
+      "module_guess": "引用溯源",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-010",
+      "module_guess": "多知识库混合检索",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-011",
+      "module_guess": "表格解析",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-012",
+      "module_guess": "引用溯源",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-009",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-013",
+      "module_guess": "文件上传（大文件）",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-014",
+      "module_guess": "文件上传",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-015",
+      "module_guess": "批量上传状态反馈",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "real_issue",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-016",
+      "module_guess": "文档解析进度展示",
+      "category": "missing_feature",
+      "sentiment": "neutral",
+      "actionability": "sufficient",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-017",
+      "module_guess": "文档解析进度展示",
+      "category": "missing_feature",
+      "sentiment": "neutral",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-016",
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-018",
+      "module_guess": "无法确定",
+      "category": "ux",
+      "sentiment": "negative",
+      "actionability": "emotional",
+      "duplicate_of": null,
+      "data_quality": "noisy",
+      "followup_question": "请问您具体遇到了什么问题？是文档解析、文件上传还是问答检索方面的困难？"
+    },
+    {
+      "id": "sig-019",
+      "module_guess": "安装文档",
+      "category": "docs",
+      "sentiment": "negative",
+      "actionability": "insufficient",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": "请问您使用的是哪种安装方式（Docker / 源码编译）？安装过程中具体报了什么错误信息？"
+    },
+    {
+      "id": "sig-020",
+      "module_guess": "Ollama 接入配置",
+      "category": "config",
+      "sentiment": "negative",
+      "actionability": "suspected_misuse",
+      "duplicate_of": null,
+      "data_quality": "partial",
+      "followup_question": "请提供 Ollama 的服务地址和端口，以及 RAGFlow 中的模型配置信息，方便排查连接问题。"
+    },
+    {
+      "id": "sig-021",
+      "module_guess": "文档解析错误反馈",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-003",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-022",
+      "module_guess": "文档解析（大文件）",
+      "category": "stability",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-001",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-023",
+      "module_guess": "GraphRAG 解析任务队列",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-007",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-024",
+      "module_guess": "检索引擎（Infinity）",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "sufficient",
+      "duplicate_of": null,
+      "data_quality": "complete",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-025",
+      "module_guess": "多知识库混合检索",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-010",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-026",
+      "module_guess": "表格解析",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-011",
+      "data_quality": "partial",
+      "followup_question": ""
+    },
+    {
+      "id": "sig-027",
+      "module_guess": "引用溯源",
+      "category": "bug",
+      "sentiment": "negative",
+      "actionability": "suspected_duplicate",
+      "duplicate_of": "sig-009",
+      "data_quality": "partial",
+      "followup_question": ""
+    }
+  ]
+}
