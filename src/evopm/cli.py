@@ -128,6 +128,7 @@ def _load_initial_state(data: str, run_mode: str) -> dict:
         "existing_requirements": existing,
         "repo_map": repo_map,
         "run_mode": run_mode,
+        "data_dir": data,  # intake 节点读取以定位 feedback.csv / issues_mock.json（honor --data）
     }
 
 
