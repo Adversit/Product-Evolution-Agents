@@ -18,7 +18,9 @@
 - `human_confirmation_needed`：**代码会据风险规则重填**，你可留空或给初步说明。
 
 ## 输出 ExecutionProposal（execution）
-- `tasks`：任务卡，`type` 从 7 类中选（product/frontend/backend/data/test/doc/ops_support）；`related_modules` 用上面的 `module_path`；`risk_tier` 可填占位（代码按关联模块取最大覆写）；`evidence_refs` 引用给定的上游 id。
+- `tasks`：任务卡，`type` **只能**从这 7 个 TaskType 里选：`product` / `frontend` / `backend` / `data` / `test` / `doc` / `ops_support`。
+  - **注意区分**：`type` 是「任务类型」，**不是** impact_types。**不要**用 `api` / `service` / `data_model` / `config` 当 `type`（那些是 impact_types）——API/后端/服务端工作一律归 `backend`，数据模型/数据迁移归 `data`，前端归 `frontend`。
+  - `related_modules` 用上面的 `module_path`；`risk_tier` 可填占位（代码按关联模块取最大覆写）；`evidence_refs` 引用给定的上游 id。
 - `change_suggestions`：模块级「改什么、为什么」，**纯文字描述，禁止任何代码**。
 - `test_suggestions`：测试建议。
 - `impl_plan`：有序步骤，**每一步必须有 `verify`（如何验证本步完成）**，可附 `risk`。
