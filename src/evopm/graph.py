@@ -147,11 +147,22 @@ def route_research_out(state: EvoPMState) -> Literal["quality_gate", "critic"]:
 # 节点：quality_gate（初评 / enrich / clarify 后重评）
 # --------------------------------------------------------------------------- #
 def quality_gate_node(state: EvoPMState) -> dict[str, Any]:
-    """RequirementAgent.draft_and_score：簇 + 两类 findings (+人工补充) → focus_candidate。"""
+    """质量门禁节点。
+
+    - 首次进入（focus_candidate 尚不存在）：draft_and_score 起草+评分。
+    - 带人工补充文本重入（clarify supplement）：用补充文本重新起草+评分。
+    - 其余重入（enrich 后 / clarify force_pass / route_support）：**不重新起草**，
+      沿用已重评/已处理的 focus_candidate，仅由 route_gate 读取其 gate 分流
+      （否则会丢弃 enrich 的 round-2 结果或人工 force_pass）。
+    """
+    human_supplement = state.get("_clarify_supplement", "")
+    existing = state.get("focus_candidate")
+    if existing is not None and not human_supplement:
+        return {}  # 重入且无补充文本：保留现有候选，交 route_gate 分流
+
     cluster = _selected_cluster(state)
     cfs = state.get("competitor_findings", [])
     tfs = state.get("tech_findings", [])
-    human_supplement = state.get("_clarify_supplement", "")
     valid_ids = collect_valid_ids(dict(state))
     agent = RequirementAgent()
     candidate, _ = agent.draft_and_score(
@@ -161,7 +172,7 @@ def quality_gate_node(state: EvoPMState) -> dict[str, Any]:
         human_supplement=human_supplement,
         valid_ids=valid_ids,
     )
-    return {"focus_candidate": candidate}
+    return {"focus_candidate": candidate, "_clarify_supplement": ""}
 
 
 def route_gate(
@@ -356,18 +367,26 @@ def critic_node(state: EvoPMState) -> dict[str, Any]:
         high_risk_items=high_risk_items,
         redo_rounds=redo_rounds,
     )
+    # 归一化 redo_target：非法值（"null"/空/幻觉节点名）一律视为不回炉。
+    if review.redo_target not in _REDO_TARGETS:
+        review.redo_target = None
     delta: dict[str, Any] = {"critic_review": review}
-    # 计数所有权：仅当 Agent 设了 redo_target（即将回炉）时自增 redo_rounds=1。
+    # 计数所有权：仅当 Agent 设了合法 redo_target（即将回炉）时自增 redo_rounds=1。
     if review.redo_target and redo_rounds < 1:
         delta["redo_rounds"] = 1
     return delta
 
 
+# 合法回炉目标（Critic 可点名重跑的节点）；其余值（含 "null"/空/幻觉名）一律落 human_review。
+_REDO_TARGETS = {"opportunity", "solution_design", "engineering", "quality_gate"}
+
+
 def route_critic(state: EvoPMState) -> str:
-    """Critic 回炉路由（纯只读，spec §3.2）。"""
+    """Critic 回炉路由（纯只读，spec §3.2）。非法 redo_target 安全兜底到 human_review。"""
     if state.get("research_reentry"):
         return "human_review"
-    return state["critic_review"].redo_target or "human_review"
+    target = state["critic_review"].redo_target
+    return target if target in _REDO_TARGETS else "human_review"
 
 
 # --------------------------------------------------------------------------- #
