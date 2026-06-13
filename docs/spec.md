@@ -517,10 +517,13 @@ class BaseAgent:
 
 ```python
 BLOCKER_DIMS = {"acceptance_clarity", "completeness", "evidence_sufficiency"}
-def decide_gate(q: QualityReport) -> GateStatus:
+def decide_gate(q: QualityReport, cluster_categories: list[Category] | None = None) -> GateStatus:
+    # 全簇为误用/文档类 → ROUTE_SUPPORT（cluster_categories 非空且 ⊆ {misuse, docs}）
+    # quality_gate 节点调用时传入选中簇的 categories；不传则退化为仅 PASS/NEEDS_ENRICH。
+    if cluster_categories and set(cluster_categories) <= {Category.MISUSE, Category.DOCS}:
+        return GateStatus.ROUTE_SUPPORT
     blockers = [d for d in q.dimensions if d.name in BLOCKER_DIMS and d.score < 60]
     if q.total >= 70 and not blockers and not q.missing_info: return GateStatus.PASS
-    # 全簇为误用/文档类 → ROUTE_SUPPORT（由 cluster.categories 判定：仅 misuse/docs）
     return GateStatus.NEEDS_ENRICH       # route_gate 再按 enrich_rounds 分流到人工
 ```
 
