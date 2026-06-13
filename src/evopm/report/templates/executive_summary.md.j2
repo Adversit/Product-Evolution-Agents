@@ -26,8 +26,8 @@
 
 ## 投入预估
 
-{% if tech_findings %}
-{% for tf in tech_findings %}
+{% if core_investments %}
+{% for tf in core_investments %}
 - {{ tf.solution_name }}：成本 {{ tf.cost_estimate }}
 {% endfor %}
 {% else %}

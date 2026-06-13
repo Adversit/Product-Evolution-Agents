@@ -235,6 +235,44 @@ def _funnel_stats(state: EvoPMState) -> dict[str, int]:
     }
 
 
+def _core_investments(state: EvoPMState) -> list[Any]:
+    """焦点需求的核心投入：仅取被焦点需求/方案实际引用的技术发现（tf-*）。
+
+    避免在一页纸摘要里堆列全部调研发现（可能数十条）。无引用时兜底取
+    成熟/参考级技术发现前 5 条。
+    """
+    seen: set[str] = set()
+    refs: list[str] = []
+
+    def add(rs: list[str] | None) -> None:
+        for r in rs or []:
+            if r not in seen:
+                seen.add(r)
+                refs.append(r)
+
+    fc = state.get("focus_candidate")
+    if fc is not None:
+        add(fc.evidence_refs)
+        for us in fc.user_stories:
+            add(us.evidence_refs)
+        for ac in fc.acceptance_criteria:
+            add(ac.evidence_refs)
+    sol = state.get("solution")
+    if sol is not None:
+        for ac in sol.acceptance_criteria:
+            add(ac.evidence_refs)
+
+    tf_by_id = {tf.id: tf for tf in (state.get("tech_findings", []) or [])}
+    core = [tf_by_id[r] for r in refs if r in tf_by_id]
+    if not core:  # 兜底：焦点需求未显式引用 tf 时，取成熟/参考级技术发现
+        core = [
+            tf
+            for tf in (state.get("tech_findings", []) or [])
+            if tf.maturity.value in ("mature", "reference")
+        ]
+    return core[:6]  # 一页纸只列核心若干项，完整清单见研发执行报告
+
+
 def build_context(state: EvoPMState) -> dict[str, Any]:
     """state → 全部模板共享的渲染上下文。"""
     rejected = _rejected_refs(state)
@@ -261,6 +299,7 @@ def build_context(state: EvoPMState) -> dict[str, Any]:
         "selected_cluster_id": state.get("selected_cluster_id", ""),
         "competitor_findings": state.get("competitor_findings", []) or [],
         "tech_findings": state.get("tech_findings", []) or [],
+        "core_investments": _core_investments(state),
         "focus": fc,
         "opportunity": state.get("opportunity"),
         "roadmap": state.get("roadmap", []) or [],
