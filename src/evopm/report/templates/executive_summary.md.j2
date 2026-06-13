@@ -1,0 +1,60 @@
+# 管理层摘要 — {{ product.name }}
+
+> 模块：{{ product.module }} ｜ 阶段：{{ product.stage }} ｜ 运行模式：`{{ run_mode }}`
+
+{% if focus %}
+## 问题
+
+{{ unconfirmed(focus.title, focus.id) }}：{{ focus.pain_point }}
+（{{ funnel.total_signals }} 条反馈 → 过滤 {{ funnel.filtered }} → {{ funnel.clusters }} 簇 → 深挖 1 焦点）
+
+## 证据
+
+{% for c in evidence_cards[:3] %}
+- [{{ c.strength }}] {{ c.excerpt }}（来源：{{ c.source }}）
+{% else %}
+- （无证据卡）
+{% endfor %}
+
+## 建议（P0 一句话）
+
+{% if opportunity %}
+**{{ opportunity.priority.value }}｜{{ opportunity.horizon.value }}**：{{ opportunity.rationale }}
+{% else %}
+（未产出优先级建议）
+{% endif %}
+
+## 投入预估
+
+{% if tech_findings %}
+{% for tf in tech_findings %}
+- {{ tf.solution_name }}：成本 {{ tf.cost_estimate }}
+{% endfor %}
+{% else %}
+- （依赖技术方案评估，暂无）
+{% endif %}
+{% if execution and execution.tasks %}
+- 任务卡 {{ execution.tasks | length }} 张，实施步骤 {{ execution.impl_plan | length }} 步。
+{% endif %}
+
+## 风险
+
+{% set risk_lines = [] %}
+{% if solution and solution.risks %}
+{% for r in solution.risks %}{% set _ = risk_lines.append(r) %}{% endfor %}
+{% endif %}
+{% if critic_review and critic_review.pending_confirmations %}
+{% for p in critic_review.pending_confirmations %}{% set _ = risk_lines.append(p) %}{% endfor %}
+{% endif %}
+{% for r in risk_lines %}
+- {{ r }}
+{% else %}
+- （无重大风险）
+{% endfor %}
+{% if observations %}
+
+> 观察项（证据不足，未纳入正式建议）：{{ observations | join("；") }}
+{% endif %}
+{% else %}
+本轮未产出焦点需求（在过滤/查重/门禁阶段分流）。共 {{ funnel.total_signals }} 条信号，{{ funnel.clusters }} 簇。
+{% endif %}

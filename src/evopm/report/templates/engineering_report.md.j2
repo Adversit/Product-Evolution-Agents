@@ -1,0 +1,147 @@
+# 研发执行报告
+
+> 产品：{{ product.name }} ｜ 模块：{{ product.module }}
+> 注意：本报告只输出**建议**，不产出任何代码改动（无 Patch/PR）。
+
+{% if execution and execution.blocked %}
+> ⚠ **执行被门禁拦截**（gate ≠ PASS）：以下为占位，需先补全需求质量后重跑。
+{% endif %}
+
+## 需求摘要 + 验收标准
+
+{% if focus %}
+**{{ unconfirmed(focus.title, focus.id) }}**（{{ focus.id }}）
+
+- 背景：{{ focus.background }}
+- 痛点：{{ focus.pain_point }}
+{% endif %}
+
+{% if solution %}
+- 方案概要：{{ solution.summary }}
+{% endif %}
+
+### 验收标准
+{% if solution and solution.acceptance_criteria %}
+{% for ac in solution.acceptance_criteria %}
+- [{{ ac.type }}] {{ ac.text }}{% if ac.evidence_refs %} _(证据：{{ ac.evidence_refs | join(", ") }})_{% endif %}
+{% endfor %}
+{% elif focus and focus.acceptance_criteria %}
+{% for ac in focus.acceptance_criteria %}
+- [{{ ac.type }}] {{ ac.text }}{% if ac.evidence_refs %} _(证据：{{ ac.evidence_refs | join(", ") }})_{% endif %}
+{% endfor %}
+{% else %}
+（暂无验收标准）
+{% endif %}
+
+## 代码影响面地图（按 impact_level 分组）
+
+{% for level in ["certain", "possible", "uncertain"] %}
+### {{ level | upper }}
+{% for item in impact_by_level[level] %}
+- **{{ item.module_path }}**{% if item.is_core_module %} ⚠ 核心模块{% endif %} ｜ 风险 `{{ item.risk_tier.value }}` ｜ 影响类型：{{ item.impact_types | map(attribute="value") | join(", ") }}
+  - {{ item.description }}
+  - 验证点：{{ item.verify_points | join("；") }}
+{% else %}
+- （无）
+{% endfor %}
+{% endfor %}
+
+{% if code_impact and code_impact.suggested_order %}
+**建议改动顺序**：{{ code_impact.suggested_order | join(" → ") }}
+{% endif %}
+
+## 修改建议
+
+{% if execution and execution.change_suggestions %}
+{% for cs in execution.change_suggestions %}
+- {{ cs }}
+{% endfor %}
+{% else %}
+（无修改建议）
+{% endif %}
+
+## 任务卡（按 type）
+
+{% for task_type, items in tasks_by_type.items() %}
+### {{ task_type }}
+{% for t in items %}
+- **{{ t.id }}** {{ t.title }} ｜ 风险 `{{ t.risk_tier.value }}`
+  - {{ t.description }}
+  - 关联模块：{{ t.related_modules | join(", ") or "-" }}
+{% if t.evidence_refs %}
+  - 证据：{{ t.evidence_refs | join(", ") }}
+{% endif %}
+{% endfor %}
+{% else %}
+（无任务卡）
+{% endfor %}
+
+## Implementation Plan
+
+{% if execution and execution.impl_plan %}
+{% for step in execution.impl_plan %}
+{{ step.step }}. **{{ step.action }}**（模块：{{ step.modules | join(", ") }}）
+   - 验证：{{ step.verify }}
+{% if step.risk %}
+   - 风险：{{ step.risk }}
+{% endif %}
+{% endfor %}
+{% else %}
+（无实施计划）
+{% endif %}
+
+## 测试建议
+
+{% if execution and execution.test_suggestions %}
+{% for ts in execution.test_suggestions %}
+- {{ ts }}
+{% endfor %}
+{% else %}
+（无测试建议）
+{% endif %}
+
+## Changelog 草稿
+
+{% if execution and execution.changelog_draft %}
+```
+{{ execution.changelog_draft }}
+```
+{% else %}
+（无 Changelog 草稿）
+{% endif %}
+
+## 风险与待确认
+
+{% set high_items = [] %}
+{% for item in (code_impact.items if code_impact else []) %}
+{% if item.is_core_module or item.risk_tier.value == "high" %}
+{% set _ = high_items.append(item) %}
+{% endif %}
+{% endfor %}
+{% if high_items %}
+### 高风险影响项
+{% for item in high_items %}
+- {{ unconfirmed(item.module_path, item.module_path) }}{% if item.is_core_module %} ⚠ 核心模块{% endif %}（{{ item.risk_tier.value }}）：{{ item.description }}
+{% endfor %}
+{% endif %}
+
+{% if code_impact and code_impact.human_confirmation_needed %}
+### 需人工确认
+{% for h in code_impact.human_confirmation_needed %}
+- {{ h }}
+{% endfor %}
+{% endif %}
+
+{% if critic_review and critic_review.pending_confirmations %}
+### Critic 待确认
+{% for p in critic_review.pending_confirmations %}
+- {{ p }}
+{% endfor %}
+{% endif %}
+
+{% if observations %}
+### 观察项（证据不足，降权）
+{% for obs in observations %}
+- {{ obs }}
+{% endfor %}
+{% endif %}
