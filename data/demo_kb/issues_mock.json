@@ -1,0 +1,65 @@
+[
+  {
+    "number": 13678,
+    "title": "[Bug]: Document automatic parsing failed",
+    "body": "After uploading several PDFs the documents stay in an unparsed state. Parsing shows as failed but there is no error message or log shown in the UI, so I cannot tell what went wrong or how to recover. Re-running parse does not help.",
+    "labels": ["bug"],
+    "state": "open",
+    "created_at": "2026-04-18T08:12:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/13678"
+  },
+  {
+    "number": 8343,
+    "title": "[Question]: parsing in stuck when apply",
+    "body": "When I apply parsing to a large document the task seems to hang forever. The progress indicator just spins and never completes, and there is no way to see which step it is stuck on or whether the worker is still alive.",
+    "labels": ["question"],
+    "state": "open",
+    "created_at": "2026-03-29T14:40:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/8343"
+  },
+  {
+    "number": 7839,
+    "title": "[Bug]: parse get stuck frequently when enable graphrag",
+    "body": "Enabling GraphRAG makes parsing tasks get stuck very frequently. The task_executor queue keeps growing and documents never finish parsing. Disabling GraphRAG makes it work again.",
+    "labels": ["bug"],
+    "state": "open",
+    "created_at": "2026-03-11T03:05:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/7839"
+  },
+  {
+    "number": 13671,
+    "title": "[Bug]: InfinityException(3052) when performing retrieval",
+    "body": "Retrieval throws InfinityException(3052) intermittently for some knowledge bases. The error surfaces during chat and breaks the answer; no relevant chunks are returned.",
+    "labels": ["bug"],
+    "state": "open",
+    "created_at": "2026-04-17T11:20:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/13671"
+  },
+  {
+    "number": 5919,
+    "title": "[Bug]: Data Retrieval Issues with Multiple Knowledge Bases",
+    "body": "When querying across multiple knowledge bases at once, retrieval quality drops noticeably and relevant documents from some KBs are missed entirely. Querying a single KB works much better.",
+    "labels": ["bug"],
+    "state": "open",
+    "created_at": "2026-02-02T09:33:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/5919"
+  },
+  {
+    "number": 12978,
+    "title": "[bug] table parsing accuracy degraded vs 0.23.1",
+    "body": "After upgrading, table parsing accuracy degraded compared to 0.23.1. Cells are merged or dropped, and questions answered from tables now frequently return wrong values.",
+    "labels": ["bug"],
+    "state": "open",
+    "created_at": "2026-04-09T16:48:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/12978"
+  },
+  {
+    "number": 15833,
+    "title": "Go: findCitations threshold descent — citation parity",
+    "body": "Citations returned by the answer often do not map back to the correct source location, so users cannot verify the answer against the original text. Lowering the citation threshold improves parity but needs proper handling.",
+    "labels": ["enhancement"],
+    "state": "open",
+    "created_at": "2026-05-21T07:15:00Z",
+    "html_url": "https://github.com/infiniflow/ragflow/issues/15833"
+  }
+]

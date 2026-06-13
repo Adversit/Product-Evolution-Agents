@@ -1,0 +1,19 @@
+# 密钥与环境
+.env
+
+# 运行产物（报告、state dump、LLM 缓存）
+runs/
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# 虚拟环境
+.venv/
+venv/

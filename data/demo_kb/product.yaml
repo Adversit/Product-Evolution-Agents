@@ -1,0 +1,15 @@
+name: RAGFlow
+description: 基于深度文档理解的开源 RAG 引擎
+target_users: [企业知识库团队, 开发者]
+module: 文件上传与问答质量
+stage: growth
+analysis_goals: [发现高频问题, 竞品对标, 需求质量评估, 代码影响分析, 生成路线图]
+team_preference: 提升体验
+github_repo: infiniflow/ragflow
+competitors:
+  - {name: Dify, homepage: "https://dify.ai", mock_file: dify.md}
+  - {name: Open WebUI, homepage: "https://openwebui.com", mock_file: open_webui.md}
+  - {name: AnythingLLM, homepage: "https://anythingllm.com", mock_file: anythingllm.md}
+tech_topics: [RAG 检索质量, 文档解析, 上传状态机, 失败重试, chunk preview, rerank, 引用溯源]
+opportunity_weights: {pain_frequency: 1.2, severity: 1.2, cost: 0.8}
+core_modules: [rag/nlp, deepdoc/parser, rag/svr]
