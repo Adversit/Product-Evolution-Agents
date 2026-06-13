@@ -1,7 +1,14 @@
-"""WT-3 测试公共构造器（手写上游对象，不依赖其他 WT 分支）。"""
+"""WT-3 测试公共构造器（手写上游对象，不依赖其他 WT 分支）。
+
+附带一个全局 autouse fixture：每个测试前归零 llm 模块级预算计数器，避免整套 live
+测试在同一进程内累计调用超过 BUDGET_LIMIT 触发 LLMBudgetExceeded。
+"""
 
 from __future__ import annotations
 
+import pytest
+
+from evopm import llm
 from evopm.schemas import (
     AcceptanceCriterion,
     Category,
@@ -22,6 +29,13 @@ from evopm.schemas import (
     UserStory,
 )
 from evopm.rules import OPPORTUNITY_DIMS, QUALITY_DIMS
+
+
+@pytest.fixture(autouse=True)
+def _reset_llm_budget():
+    """每个测试前归零 LLM 预算计数器（防整套 live 测试累计触顶）。"""
+    llm.reset_budget()
+    yield
 
 
 def make_cluster(

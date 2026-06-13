@@ -227,17 +227,21 @@ def _tech_output():
     )
 
 
-def _draft_candidate(passing: bool) -> RequirementCandidate:
-    """passing=False → blocker 维低 + missing_info（gate=NEEDS_ENRICH）；True → 高分无缺失。"""
+def _draft_candidate(passing: bool):
+    """quality_gate 节点现在调 RequirementDraftLLM（扁平）。
+
+    passing=False → blocker 维低 + missing_info（代码侧 gate=NEEDS_ENRICH）；True → 高分无缺失。
+    """
+    from evopm.agents.requirement import DimLLM, RequirementDraftLLM
+
     if passing:
         scores = {d: 85 for d in _ALL_QDIMS}
         missing = []
     else:
         scores = {d: 50 for d in _ALL_QDIMS}
         missing = ["缺少验收标准"]
-    return RequirementCandidate(
+    return RequirementDraftLLM(
         id="req-01",
-        cluster_id="clu-01",
         title="提供解析进度与失败可见性",
         background="bg",
         target_users=["企业知识库团队"],
@@ -255,18 +259,10 @@ def _draft_candidate(passing: bool) -> RequirementCandidate:
         ],
         acceptance_criteria=[],
         evidence_refs=["sig-001", "cf-01", "tf-01"],
-        quality=QualityReport(
-            total=0,
-            dimensions=[
-                QualityDimension(name=d, score=scores[d], rationale="r")
-                for d in _ALL_QDIMS
-            ],
-            missing_info=missing,
-            ambiguities=[],
-            followup_questions=["进度粒度？"],
-            gate=GateStatus.NEEDS_ENRICH,
-            round=1,
-        ),
+        dimensions=[DimLLM(name=d, score=scores[d], rationale="r") for d in _ALL_QDIMS],
+        missing_info=missing,
+        ambiguities=[],
+        followup_questions=["进度粒度？"],
     )
 
 
@@ -414,7 +410,7 @@ def _make_canned(*, draft_passing: bool, redo_once: bool, ever_passes: bool | No
             return _competitor_output()
         if name == "TechOutput":
             return _tech_output()
-        if name == "RequirementCandidate":
+        if name == "RequirementDraftLLM":
             state["req_calls"] += 1
             # 初评（req_calls==1）按 draft_passing；enrich（req_calls>=2）按 ever_passes
             passing = draft_passing if state["req_calls"] == 1 else ever_passes
