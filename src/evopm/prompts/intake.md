@@ -21,6 +21,6 @@
 - 一次返回全部信号，顺序、id、text 与输入完全一致。
 - 情绪宣泄（如「纯纯的垃圾」「气死了」）标 `emotional` 并给 followup_question。
 - 用户自述配置/环境问题（如本地 ollama 连不上）多为 `suspected_misuse`。
-- 内容高度雷同的两条（如都要求"解析进度条/百分比"）把后一条 `duplicate_of` 指向前一条。
+- **查重(务必执行)**：先通读全部信号,找出语义上表达同一诉求的成对/成组信号——尤其是功能请求(例如多条都要求"解析进度条/百分比展示")。对每一组,保留 id 最靠前的一条为主,其余每条的 `duplicate_of` 指向该主信号 id,并把这些后续条目的 actionability 标 `suspected_duplicate`。不要漏掉明显的重复对(数据中通常至少存在一对)。
 
 {{include:_evidence_rules.md}}
