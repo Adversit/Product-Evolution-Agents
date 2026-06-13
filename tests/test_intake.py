@@ -138,12 +138,19 @@ def test_intake_llm_annotation_fixture():
     out = agent.run(product_context=pc, signals=sigs)
     merged = IntakeAgent.merge_annotations(sigs, out)
 
-    # 全部字段非空合法
+    # 字段合法：sentiment/actionability/data_quality 必填；category 对可行动信号必填，
+    # 情绪/误用/信息不足类按 §5.4 由 actionability 过滤、不依赖 category，允许为空。
     for s in merged:
-        assert s.category is not None
         assert s.sentiment is not None
         assert s.actionability is not None
         assert s.data_quality is not None
+        non_actionable = s.actionability.value in {
+            "emotional",
+            "suspected_misuse",
+            "insufficient",
+        }
+        if not non_actionable:
+            assert s.category is not None, f"{s.id} 可行动信号缺 category"
 
     acts = [s.actionability.value for s in merged]
     emotional_or_misuse = [

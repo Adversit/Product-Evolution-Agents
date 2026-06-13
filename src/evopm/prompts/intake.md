@@ -3,7 +3,7 @@
 ## 你的任务
 对输入里的**每一条**信号，逐字段标注（不要新增或删除信号，不要修改 `id` 与 `text` 原文）：
 
-- `category`：12 类之一 —— bug / missing_feature / ux / performance / docs / config / pricing / misuse / competitor_ref / tech_upgrade / security / stability。
+- `category`：12 类之一 —— bug / missing_feature / ux / performance / docs / config / pricing / misuse / competitor_ref / tech_upgrade / security / stability。**每一条都必须给出 category**，即使是情绪宣泄或环境/配置问题也按内容归到最接近的一类（安装/配置不通→config，体验抱怨→ux，崩溃/卡死→stability，误用→misuse），不要留空。
 - `sentiment`：negative / neutral / positive。
 - `actionability`：6 档之一 ——
   - `real_issue`：是真实可处理的问题或需求；
