@@ -48,7 +48,9 @@ def decide_gate(
     """
     if cluster_categories and set(cluster_categories) <= _SUPPORT_CATEGORIES:
         return GateStatus.ROUTE_SUPPORT
-    blockers = [d for d in q.dimensions if d.name in BLOCKER_DIMS and d.score < 60]
+    # blocker 维「缺失」视同不达标（get 默认 0）：避免模型只回少数维度时绕过 blocker 检查。
+    present = {d.name: d.score for d in q.dimensions}
+    blockers = [b for b in BLOCKER_DIMS if present.get(b, 0) < 60]
     if q.total >= 70 and not blockers and not q.missing_info:
         return GateStatus.PASS
     return GateStatus.NEEDS_ENRICH

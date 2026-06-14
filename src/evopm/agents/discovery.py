@@ -18,7 +18,7 @@ from evopm.agents.base import (
     collect_valid_ids,
     validate_evidence_refs,
 )
-from evopm.schemas import ExistingRequirement, InsightCluster, SignalItem
+from evopm.schemas import ClusterStatus, ExistingRequirement, InsightCluster, SignalItem
 
 
 class DiscoveryOutput(BaseModel):
@@ -64,6 +64,16 @@ class DiscoveryAgent(BaseAgent):
         # frequency 与清洗后的 signal_ids 对齐
         for clu in clean_out.clusters:
             clu.frequency = len(clu.signal_ids)
+        # 历史查重归一化：duplicate_of_existing 必须指向真实历史需求 id。
+        existing_ids = {e.id for e in existing}
+        for clu in clean_out.clusters:
+            doe = clu.duplicate_of_existing
+            if doe and doe not in existing_ids:  # 悬空历史引用 → 清除，不算重复
+                clu.duplicate_of_existing = ""
+                if clu.status == ClusterStatus.DUPLICATE:
+                    clu.status = ClusterStatus.KNOWN
+            elif doe:  # 有效历史引用 → 强制标 DUPLICATE（状态与引用一致）
+                clu.status = ClusterStatus.DUPLICATE
         self.violations = violations  # 供节点收集后作为 Critic 输入
         return clean_out
 

@@ -74,7 +74,10 @@ def discovery_node(state: EvoPMState) -> dict[str, Any]:
     actionable = filter_actionable(signals)
     agent = DiscoveryAgent()
     output = agent.run(signals=actionable, existing_requirements=existing)
-    return {"clusters": list(output.clusters)}
+    return {
+        "clusters": list(output.clusters),
+        "evidence_violations": list(getattr(agent, "violations", [])),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -99,9 +102,9 @@ def select_cluster_node(state: EvoPMState) -> dict[str, Any]:
     }
     resume = interrupt(payload)
     cluster_id = resume.get("cluster_id") if isinstance(resume, dict) else None
-    valid = {c.id for c in clusters}
-    if cluster_id not in valid:  # 兜底：非法 id 退回最大频次簇（与 replay 预设一致）
-        # 跳过 duplicate/insufficient（这类不能作焦点 P0），并列/无可选时退回全体最大频次。
+    chosen = next((c for c in clusters if c.id == cluster_id), None)
+    # 非法 id，或选中的是 duplicate/insufficient（不能作焦点 P0）→ 退回最大频次的可选簇。
+    if chosen is None or chosen.status.value in ("duplicate", "insufficient"):
         selectable = [
             c for c in clusters if c.status.value not in ("duplicate", "insufficient")
         ]
@@ -321,7 +324,14 @@ def engineering_node(state: EvoPMState) -> dict[str, Any]:
         core_modules=pc.core_modules,
         gate=gate,
     )
-    return {"code_impact": output.impact, "execution": output.execution}
+    # 证据闭包校验（此前 engineering 输出未校验）：剔除 task 等的悬空 evidence_refs。
+    valid_ids = collect_valid_ids(dict(state))
+    clean, viol = validate_evidence_refs(output, valid_ids)
+    return {
+        "code_impact": clean.impact,
+        "execution": clean.execution,
+        "evidence_violations": viol,
+    }
 
 
 # --------------------------------------------------------------------------- #

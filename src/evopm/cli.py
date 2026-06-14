@@ -15,6 +15,7 @@ typer 应用 ``app``（pyproject 已映射 ``evopm = "evopm.cli:app"``）。
 
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import Optional
@@ -80,6 +81,12 @@ def run(
     # run 入口：归零预算 + 注入 run_mode（spec §6 / §11.1）。
     llm.reset_budget()
     llm.set_run_mode(run_mode)
+    if run_mode == "replay":
+        # 离线兜底：指向提交进仓库的 glm-5.1 缓存（同 server.py），无需 key / 可断网复现。
+        os.environ["EVOPM_MODEL"] = "glm-5.1"
+        llm.CACHE_DIR = Path("tests/replay_cache_glm51")
+    elif model:
+        os.environ["EVOPM_MODEL"] = model  # 应用 --model（此前仅打印未生效）
 
     _console.print(
         f"[bold]EvoPM run[/bold] mode=[cyan]{run_mode}[/cyan] "
@@ -260,7 +267,7 @@ def _print_funnel(graph, final_state: dict) -> None:
     if paths:
         _console.print("[bold]报告：[/bold]")
         for p in paths:
-            _console.print(f"  • {p}")
+            _console.print(f"  - {p}")  # ASCII 项目符号：U+2022 在 zh-Windows gbk 控制台无法编码会崩
     else:
         _console.print("[yellow]未产出报告路径（report 节点未写 report_paths）。[/yellow]")
 

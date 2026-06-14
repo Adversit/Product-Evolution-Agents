@@ -176,8 +176,9 @@ def _finalize_quality(
         )
         candidate.quality = q
 
-    scores = [d.score for d in q.dimensions if d.name in QUALITY_DIMS]
-    q.total = round(sum(scores) / len(scores)) if scores else 0
+    # 按 name 去重并以「完整 10 维」为分母：模型只回少数维度时 total 不会被抬高（如单维 100→10）。
+    present = {d.name: d.score for d in q.dimensions if d.name in QUALITY_DIMS}
+    q.total = round(sum(present.values()) / len(QUALITY_DIMS)) if present else 0
     q.round = round_no
     q.gate = decide_gate(q, cluster.categories)
     candidate.quality_history.append(q.model_copy(deep=True))

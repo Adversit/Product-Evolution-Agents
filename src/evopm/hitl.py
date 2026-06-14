@@ -84,12 +84,17 @@ def parse_select_cluster(payload: dict, ask: AskFn = input) -> dict:
 
     非法（空 / 不在候选 id 中）→ 重新提示，不抛异常。
     """
-    valid_ids = {str(c.get("id")) for c in payload.get("clusters", [])}
+    # 只允许选可作焦点的簇：duplicate/insufficient 不能作 P0 焦点（spec §3.3）。
+    selectable = {
+        str(c.get("id"))
+        for c in payload.get("clusters", [])
+        if c.get("status") not in ("duplicate", "insufficient")
+    }
     while True:
         raw = ask("请输入要深挖的簇 id（如 clu-01）：").strip()
-        if raw in valid_ids:
+        if raw in selectable:
             return {"cluster_id": raw}
-        _print(f"[red]无效的簇 id：{raw!r}，请从 {sorted(valid_ids)} 中选择。[/red]")
+        _print(f"[red]无效或不可选（duplicate/insufficient）的簇 id：{raw!r}，请从 {sorted(selectable)} 中选择。[/red]")
 
 
 # --------------------------------------------------------------------------- #
