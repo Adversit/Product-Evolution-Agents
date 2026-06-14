@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -34,6 +35,12 @@ WEB_SEARCH_TIMEOUT = 20  # web_search 超时（秒）
 BUDGET_LIMIT = 30  # 全局 LLM 真实调用上限
 _BACKOFF_DELAYS = (1, 4, 16)  # 429/5xx/网络超时指数退避（测试可 monkeypatch）
 CACHE_DIR = Path("runs/.cache")
+
+# GLM Coding Plan 有并发上限（突发并发 → 429 code 1302）。全局信号量把同时在飞的
+# 真实 LLM 请求限到 EVOPM_LLM_CONCURRENCY（默认 2），避免两个 research 节点 fan-out
+# 时打爆并发。退避 sleep 在信号量之外，重试期间释放名额给其他线程。
+_LLM_CONCURRENCY = max(1, int(os.environ.get("EVOPM_LLM_CONCURRENCY", "2")))
+_llm_semaphore = threading.Semaphore(_LLM_CONCURRENCY)
 
 
 class LLMCallFailed(Exception):
@@ -156,7 +163,8 @@ def _invoke_with_network_retries(structured_llm, messages):
     last_exc: Exception | None = None
     for attempt in range(len(_BACKOFF_DELAYS)):
         try:
-            return structured_llm.invoke(messages)
+            with _llm_semaphore:  # 限制全局并发，避免突发并发触发 429
+                return structured_llm.invoke(messages)
         except Exception as e:  # 网络/限流/超时等 transient 失败统一退避重试
             last_exc = e
             if attempt < len(_BACKOFF_DELAYS) - 1:
