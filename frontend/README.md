@@ -7,6 +7,23 @@ Implemented from the Claude Design handoff `EvoPM Pipeline Observatory.dc.html`
 (see `design-reference/`). Visual tokens and field requirements come from
 `docs/frontend_demo_ui.md` and `docs/claude_design/demo/design_handoff_demo.md`.
 
+## 完成度 / Status
+
+The delivered design file was the **Hero only**. This build implements the Hero
+plus the brief's iteration #2 (node-inspection drawer). Mapped against the full
+4-iteration plan in `design_handoff_demo.md` §六:
+
+| 简报迭代计划 | 状态 |
+|---|---|
+| ① Hero — 实时 DAG + 播放动画 + 计数/异常侧栏 | ✅ 完成 |
+| ② 节点检视抽屉 — 结构化字段表 + 原始 JSON 双视图 | ✅ 完成 |
+| ③ 断点交互面板 — 3 个 interrupt payload 原样展示 + resume 应答 | ⬜ 未实现 |
+| ④ 异常定位高亮全套 + 时间轴回看 | ◑ 部分（异常点击定位/环高亮 ✅；时间轴 scrubber ⬜） |
+| 后端联调 — `/ws` 事件 + `/api/state` + `/api/funnel` | ⬜ 未实现（当前用静态 replay 数据，见下方 Notes） |
+
+**一句话：** 对照交付的设计稿与选定范围（Hero + 节点抽屉）是完整的；整份简报的
+③ 断点面板、④ 时间轴回看、以及后端实时数据接入尚未实现，是下一步工作。
+
 ## Run
 
 ```bash
