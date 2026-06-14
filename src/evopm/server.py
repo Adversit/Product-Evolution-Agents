@@ -77,6 +77,7 @@ class Runner:
         self._resume_q: "queue.Queue[Any]" = queue.Queue()
         self.graph: Any = None
         self.events_log: list[dict] = []
+        self.generation: int = 0  # 每次 start 自增；/ws 据此检测新 run 并从头重放
         self.status: str = "idle"  # idle | running | interrupted | done | error
         self.mode: str = "replay"
         self.interactive: bool = False
@@ -94,7 +95,8 @@ class Runner:
                 return  # 已有运行，忽略（demo 单会话）
             self.mode = mode
             self.interactive = interactive
-            self.events_log = []  # 新 run → 新列表（/ws 会检测重置）
+            self.events_log = []  # 新 run → 新列表
+            self.generation += 1  # /ws 检测到 generation 变化即从头重放新 run
             self.status = "running"
             # drain 残留 resume
             while not self._resume_q.empty():
@@ -261,6 +263,9 @@ def api_run(req: RunReq) -> dict:
 
 @app.post("/api/reset")
 def api_reset() -> dict:
+    if RUNNER.status in ("running", "interrupted"):
+        # 运行中不重置：否则会留下孤儿线程，其后续 _emit/status 写入会与新 run 交错。
+        return {"status": "busy", "detail": "run in progress; reset ignored"}
     RUNNER.status = "idle"
     RUNNER.events_log = []
     RUNNER.graph = None
@@ -334,11 +339,13 @@ async def ws(websocket: WebSocket) -> None:
 
     recv_task = asyncio.create_task(_recv())
     idx = 0
+    gen = RUNNER.generation
     try:
         while True:
-            log = RUNNER.events_log
-            if idx > len(log):  # events_log 被新 run 重置
+            if RUNNER.generation != gen:  # 新 run：从头重放新 events_log（避免漏掉早期节点事件）
+                gen = RUNNER.generation
                 idx = 0
+            log = RUNNER.events_log
             while idx < len(log):
                 await websocket.send_json(log[idx])
                 idx += 1
