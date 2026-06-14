@@ -124,7 +124,7 @@ class ResearchAgent(BaseAgent):
         questions: list[str],
         run_mode: str,
     ) -> list[_Unit]:
-        force_mock = run_mode == "mock"
+        force_mock = run_mode in ("mock", "replay")  # replay 全离线，不触网搜索
         units: list[_Unit] = []
         searches_left = MAX_SEARCHES
 
