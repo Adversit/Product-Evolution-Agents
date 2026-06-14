@@ -50,7 +50,10 @@ class DimLLM(BaseModel):
 # 质量评分维度与 missing_info 等拍平到顶层，code 侧再组装成 RequirementCandidate + QualityReport。
 class RequirementDraftLLM(BaseModel):
     id: str = "req-01"
-    title: str = ""
+    # title 必填（无默认）：GLM 在限流/截断下可能返回空 tool call，若 title 也有默认值，
+    # 整个草稿会被当作合法的「空草稿」静默接受（title="" + 0 维度 → total 0 → 退化空候选）。
+    # 设为必填后，空 tool call 触发校验失败 → structured_call 重试反馈 → 穷尽走缓存兜底。
+    title: str
     background: str = ""
     target_users: list[str] = []
     pain_point: str = ""

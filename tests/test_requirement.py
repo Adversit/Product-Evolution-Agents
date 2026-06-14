@@ -18,6 +18,17 @@ from evopm.rules import QUALITY_DIMS
 from evopm.schemas import Category, GateStatus
 
 
+def test_draft_schema_requires_title():
+    """退化空候选根因：title 必填。GLM 在限流/截断下返回空 tool call 时，全字段默认值
+    会让一个空草稿被静默当作合法输出（title=""），产出空候选 + total 0。title 设为必填后，
+    空 tool call → 校验失败 → 走 structured_call 的重试反馈，穷尽则缓存兜底，不再静默吞空。"""
+    from pydantic import ValidationError
+
+    RequirementDraftLLM(title="有标题就合法")  # 正常
+    with pytest.raises(ValidationError):
+        RequirementDraftLLM()  # 无 title → 拒绝（修复前会得到 title="" 的空草稿）
+
+
 def _patch_llm(monkeypatch, returned: RequirementDraftLLM):
     def fake(schema, system, user, model=None, use_cache=True):
         assert schema is RequirementDraftLLM
