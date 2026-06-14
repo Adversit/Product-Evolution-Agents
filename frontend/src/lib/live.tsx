@@ -117,20 +117,26 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     [handleEvent],
   );
 
-  // Initial connect: the server boots having already auto-run a replay, so /ws
-  // replays the backlog immediately. Pull /api/state up front too.
+  // Initial connect: the server may still be running its boot autorun, so /api/state
+  // can 409 briefly — retry a few times before giving up. Connect /ws REGARDLESS:
+  // the socket resolves the real status (onOpen → live/replay, onError → offline),
+  // so an early 409 never strands us permanently offline.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const s = await fetchState();
-        if (cancelled) return;
-        setState(s);
-        const mode: Connection = s.run_mode === "live" ? "live" : "replay";
-        connectStream(mode);
-      } catch {
-        if (!cancelled) setConnection("offline");
+      let s: LiveState | null = null;
+      for (let i = 0; i < 20 && !cancelled; i++) {
+        try {
+          s = await fetchState();
+          break;
+        } catch {
+          await new Promise((r) => setTimeout(r, 500));
+        }
       }
+      if (cancelled) return;
+      if (s) setState(s);
+      const mode: Connection = s?.run_mode === "live" ? "live" : "replay";
+      connectStream(mode);
     })();
     return () => {
       cancelled = true;

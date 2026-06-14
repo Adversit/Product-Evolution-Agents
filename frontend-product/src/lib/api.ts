@@ -113,26 +113,28 @@ interface RunStatus {
   done?: boolean;
 }
 
-// Ensure a run exists: if /api/state 409s (no run yet), kick off a replay run and
-// poll /api/status until it settles, then return the state. Best-effort; failures
-// bubble up so the caller can fall back to the offline sample.
+// Ensure a FINISHED run before reading state. /api/state returns 200 with PARTIAL
+// data mid-run (e.g. during the server's boot autorun), so we must gate on
+// /api/status reaching a terminal state before fetchState — otherwise the workbench
+// can render a half-populated state. Kick off a replay run only if the server is idle.
+// Best-effort; failures bubble up so the caller can fall back to the offline sample.
 export async function ensureState(): Promise<LiveState> {
+  let st: RunStatus | null = null;
   try {
-    return await fetchState();
-  } catch (e) {
-    const status = (e as { status?: number }).status;
-    if (status !== 409) throw e;
+    st = await getJSON<RunStatus>("/api/status");
+  } catch {
+    // no /api/status → old behavior: just read state.
+    return fetchState();
   }
-  await startRun();
-  // poll up to ~30s for the run to finish, then read state
-  for (let i = 0; i < 60; i++) {
+  if (st.status === "idle") await startRun();
+  // poll up to ~60s for a terminal status (done/error/completed), then read state.
+  for (let i = 0; i < 120; i++) {
+    const s = st.status;
+    if (s === "done" || s === "error" || s === "completed") break;
     await new Promise((r) => setTimeout(r, 500));
     try {
-      const st = await getJSON<RunStatus>("/api/status");
-      const done = st.done === true || st.status === "done" || st.status === "idle" || st.status === "completed";
-      if (done) break;
+      st = await getJSON<RunStatus>("/api/status");
     } catch {
-      // /api/status may not exist; just try fetching state below
       break;
     }
   }
