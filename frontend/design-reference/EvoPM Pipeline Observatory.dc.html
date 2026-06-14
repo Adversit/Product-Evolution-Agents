@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#0B0E14;height:100%}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#232A36;border-radius:6px}
+  @keyframes flow{to{stroke-dashoffset:-28}}
+  @keyframes flowSlow{to{stroke-dashoffset:-28}}
+  @keyframes pulseCyan{0%,100%{box-shadow:0 0 0 1px rgba(34,211,238,.55),0 0 18px rgba(34,211,238,.22)}50%{box-shadow:0 0 0 1px rgba(34,211,238,.95),0 0 34px rgba(34,211,238,.5)}}
+  @keyframes pulseEmerald{0%,100%{box-shadow:0 0 0 1px rgba(52,211,153,.55),0 0 18px rgba(52,211,153,.22)}50%{box-shadow:0 0 0 1px rgba(52,211,153,.95),0 0 34px rgba(52,211,153,.5)}}
+  @keyframes pulseAmber{0%,100%{box-shadow:0 0 0 1px rgba(251,191,36,.55),0 0 18px rgba(251,191,36,.22)}50%{box-shadow:0 0 0 1px rgba(251,191,36,.95),0 0 34px rgba(251,191,36,.5)}}
+  @keyframes pulseViolet{0%,100%{box-shadow:0 0 0 1px rgba(167,139,250,.55),0 0 18px rgba(167,139,250,.22)}50%{box-shadow:0 0 0 1px rgba(167,139,250,.95),0 0 34px rgba(167,139,250,.5)}}
+  @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</helmet>
+<div style="height:100vh;width:100vw;display:flex;flex-direction:column;background:#0B0E14;color:#E5E7EB;font-family:Inter,system-ui,sans-serif;overflow:hidden">
+
+  <header style="display:flex;align-items:center;gap:20px;padding:14px 22px;border-bottom:1px solid #232A36;background:linear-gradient(180deg,#11161F,#0d1119)">
+    <div style="display:flex;align-items:center;gap:11px;flex-shrink:0">
+      <div style="width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#22D3EE,#34D399);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#0B0E14;font-weight:800;font-size:17px;box-shadow:0 0 16px rgba(34,211,238,.35)">⚡</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;letter-spacing:.2px;white-space:nowrap">EvoPM Agent · 流水线透视台</div>
+        <div style="font-size:11px;color:#6B7280;font-family:'JetBrains Mono',monospace">LangGraph · 14-node multi-agent pipeline</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 11px;border:1px solid #232A36;border-radius:7px;background:#11161F">
+      <span style="width:7px;height:7px;border-radius:50%;background:#A78BFA;box-shadow:0 0 8px #A78BFA;animation:dotPulse 1.8s ease-in-out infinite"></span>
+      <span style="font-size:12px;font-family:'JetBrains Mono',monospace;color:#c4b5fd">run_mode=replay</span>
+    </div>
+
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:#9CA3AF;text-align:right;flex-shrink:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">STEP {{ stepLabel }}</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px;border:1px solid #232A36;border-radius:9px;background:#11161F;flex-shrink:0">
+        <button onClick="{{ reset }}" style="width:32px;height:32px;border:none;border-radius:6px;background:#161C28;color:#9CA3AF;cursor:pointer;font-size:14px">↺</button>
+        <button onClick="{{ prev }}" style="width:32px;height:32px;border:none;border-radius:6px;background:#161C28;color:#9CA3AF;cursor:pointer;font-size:13px">◀</button>
+        <button onClick="{{ togglePlay }}" style="{{ playBtnStyle }}">{{ playGlyph }}</button>
+        <button onClick="{{ step }}" style="width:32px;height:32px;border:none;border-radius:6px;background:#161C28;color:#9CA3AF;cursor:pointer;font-size:13px">▶</button>
+      </div>
+      <button onClick="{{ cycleSpeed }}" style="height:32px;padding:0 12px;border:1px solid #232A36;border-radius:7px;background:#11161F;color:#9CA3AF;cursor:pointer;font-size:12px;font-family:'JetBrains Mono',monospace;flex-shrink:0">{{ speedLabel }}</button>
+      <button onClick="{{ toggleAnim }}" style="{{ animBtnStyle }}">{{ animLabel }}</button>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0">
+
+    <main style="flex:1;position:relative;min-width:0;background:radial-gradient(1200px 600px at 35% 30%,#10151f 0%,#0B0E14 70%)">
+      <div ref="{{ stageRef }}" style="position:absolute;inset:0;overflow:hidden">
+        <div style="{{ canvasStyle }}">
+          <svg width="{{ canvasW }}" height="{{ canvasH }}" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none">
+            <defs>
+              <marker id="arrDim" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#3a4250"></path></marker>
+              <marker id="arrCyan" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#22D3EE"></path></marker>
+              <marker id="arrEmerald" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#34D399"></path></marker>
+              <marker id="arrViolet" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#A78BFA"></path></marker>
+            </defs>
+            <sc-for list="{{ edges }}" as="e" hint-placeholder-count="18">
+              <path d="{{ e.d }}" marker-end="{{ e.marker }}" style="{{ e.style }}"></path>
+            </sc-for>
+          </svg>
+
+          <sc-for list="{{ edgeLabels }}" as="lb" hint-placeholder-count="6">
+            <div style="{{ lb.style }}">{{ lb.text }}</div>
+          </sc-for>
+
+          <sc-for list="{{ nodes }}" as="node" hint-placeholder-count="14">
+            <div style="{{ node.style }}" onMouseEnter="{{ node.onEnter }}" onMouseLeave="{{ node.onLeave }}">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+                <span style="{{ node.dotStyle }}"></span>
+                <span style="font:700 13px 'JetBrains Mono',monospace;color:#EDF1F6;letter-spacing:.2px">{{ node.label }}</span>
+                <span style="margin-left:auto;font:500 11px 'JetBrains Mono',monospace;color:#6B7280">{{ node.dur }}</span>
+              </div>
+              <div style="font:500 11px 'JetBrains Mono',monospace;color:#7C8AA0;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ node.agent }}</div>
+              <div style="font:400 11.5px Inter,sans-serif;color:#aab2bf;line-height:1.36;margin-bottom:7px">{{ node.conclusion }}</div>
+              <sc-if value="{{ node.bar }}">
+                <div style="margin-bottom:7px">
+                  <div style="display:flex;align-items:flex-end;gap:2px;height:26px">
+                    <sc-for list="{{ node.bar.segs }}" as="seg" hint-placeholder-count="10">
+                      <div style="{{ seg.style }}"></div>
+                    </sc-for>
+                  </div>
+                  <div style="font:500 9.5px 'JetBrains Mono',monospace;color:#6B7280;margin-top:3px">{{ node.bar.label }}</div>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-wrap:wrap;gap:4px">
+                <sc-for list="{{ node.chips }}" as="chip" hint-placeholder-count="3">
+                  <span style="{{ chip.style }}">{{ chip.text }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:18px;bottom:14px;display:flex;align-items:center;gap:16px;padding:8px 14px;border:1px solid #232A36;border-radius:9px;background:rgba(17,22,31,.82);backdrop-filter:blur(6px);font-size:11px;font-family:'JetBrains Mono',monospace">
+        <span style="color:#6B7280;letter-spacing:.5px">状态</span>
+        <span style="display:flex;align-items:center;gap:5px;color:#9CA3AF"><i style="width:8px;height:8px;border-radius:50%;background:#22D3EE;box-shadow:0 0 8px #22D3EE"></i>active</span>
+        <span style="display:flex;align-items:center;gap:5px;color:#9CA3AF"><i style="width:8px;height:8px;border-radius:50%;background:#34D399"></i>done</span>
+        <span style="display:flex;align-items:center;gap:5px;color:#9CA3AF"><i style="width:8px;height:8px;border-radius:50%;background:#6B7280"></i>pending</span>
+        <span style="width:1px;height:14px;background:#232A36"></span>
+        <span style="color:#6B7280;letter-spacing:.5px">边</span>
+        <span style="color:#67e8f9">— 实际走向</span>
+        <span style="color:#c4b5fd">┄ 回环/未触发</span>
+      </div>
+    </main>
+
+    <aside style="width:312px;flex-shrink:0;border-left:1px solid #232A36;background:#0d1119;overflow-y:auto;padding:18px 18px 24px">
+
+      <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:#6B7280;text-transform:uppercase;margin-bottom:11px">漏斗 · Funnel</div>
+      <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:22px">
+        <div style="flex:1;text-align:center;padding:11px 4px;border:1px solid #232A36;border-radius:8px;background:#11161F"><div style="font:700 19px 'JetBrains Mono',monospace;color:#67e8f9">27</div><div style="font-size:10px;color:#6B7280;margin-top:2px">信号</div></div>
+        <div style="display:flex;align-items:center;color:#3a4250">›</div>
+        <div style="flex:1;text-align:center;padding:11px 4px;border:1px solid #232A36;border-radius:8px;background:#11161F"><div style="font:700 19px 'JetBrains Mono',monospace;color:#67e8f9">24</div><div style="font-size:10px;color:#6B7280;margin-top:2px">过滤后</div></div>
+        <div style="display:flex;align-items:center;color:#3a4250">›</div>
+        <div style="flex:1;text-align:center;padding:11px 4px;border:1px solid #232A36;border-radius:8px;background:#11161F"><div style="font:700 19px 'JetBrains Mono',monospace;color:#67e8f9">3</div><div style="font-size:10px;color:#6B7280;margin-top:2px">簇</div></div>
+        <div style="display:flex;align-items:center;color:#3a4250">›</div>
+        <div style="flex:1;text-align:center;padding:11px 4px;border:1px solid rgba(251,113,133,.4);border-radius:8px;background:rgba(251,113,133,.08)"><div style="font:700 19px 'JetBrains Mono',monospace;color:#fda4af">1</div><div style="font-size:10px;color:#9CA3AF;margin-top:2px">焦点</div></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:#6B7280;text-transform:uppercase;margin-bottom:11px">轮次 & 预算</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="flex:1;padding:10px;border:1px solid #232A36;border-radius:8px;background:#11161F"><div style="font:600 12px 'JetBrains Mono',monospace;color:#6ee7b7">enrich</div><div style="font:700 16px 'JetBrains Mono',monospace;color:#E5E7EB;margin-top:3px">1<span style="color:#4b5563;font-size:12px">/1</span></div></div>
+        <div style="flex:1;padding:10px;border:1px solid #232A36;border-radius:8px;background:#11161F"><div style="font:600 12px 'JetBrains Mono',monospace;color:#6B7280">clarify</div><div style="font:700 16px 'JetBrains Mono',monospace;color:#6B7280;margin-top:3px">0<span style="color:#4b5563;font-size:12px">/1</span></div></div>
+        <div style="flex:1;padding:10px;border:1px solid #232A36;border-radius:8px;background:#11161F"><div style="font:600 12px 'JetBrains Mono',monospace;color:#6B7280">redo</div><div style="font:700 16px 'JetBrains Mono',monospace;color:#6B7280;margin-top:3px">0<span style="color:#4b5563;font-size:12px">/1</span></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:13px;padding:13px;border:1px solid #232A36;border-radius:8px;background:#11161F;margin-bottom:22px">
+        <div style="width:54px;height:54px;border-radius:50%;background:conic-gradient(#22D3EE 0deg,#1b2230 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:42px;height:42px;border-radius:50%;background:#11161F;display:flex;align-items:center;justify-content:center;font:700 12px 'JetBrains Mono',monospace;color:#67e8f9">0/30</div></div>
+        <div><div style="font-size:13px;font-weight:600;color:#E5E7EB">LLM 调用预算</div><div style="font-size:11px;color:#6B7280;margin-top:3px;font-family:'JetBrains Mono',monospace">replay 模式 · 0 实时调用</div></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:#6B7280;text-transform:uppercase;margin-bottom:11px">异常定位 · click to locate</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <sc-for list="{{ anomalies }}" as="a" hint-placeholder-count="6">
+          <div onClick="{{ a.onClick }}" style="{{ a.style }}">
+            <span style="{{ a.dotStyle }}"></span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;font-weight:600;color:#E5E7EB">{{ a.label }}</div>
+              <div style="font-size:10.5px;color:#6B7280;margin-top:1px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.detail }}</div>
+            </div>
+            <span style="{{ a.countStyle }}">{{ a.count }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { step: 11, playing: false, anim: true, speed: 1, hover: null, locate: null, scale: 0.42, offX: 24, offY: 24 };
+
+  constructor(props){ super(props); this.stageRef = React.createRef(); this.W = 214; this.H = 116; this.CW = 1334; this.CH = 766; }
+
+  componentDidMount(){
+    this.measure();
+    this._onResize = () => this.measure();
+    window.addEventListener('resize', this._onResize);
+    setTimeout(() => this.measure(), 250);
+  }
+  componentWillUnmount(){ clearInterval(this._timer); window.removeEventListener('resize', this._onResize); }
+
+  measure(){
+    const el = this.stageRef.current; if(!el) return;
+    const w = el.clientWidth - 40, h = el.clientHeight - 70;
+    const scale = Math.min(w / this.CW, h / this.CH, 0.95);
+    const offX = Math.max(20, (el.clientWidth - this.CW * scale) / 2);
+    const offY = Math.max(18, (el.clientHeight - this.CH * scale) / 2 - 10);
+    this.setState({ scale, offX, offY });
+  }
+
+  startTimer(){
+    clearInterval(this._timer);
+    this._timer = setInterval(() => {
+      this.setState(s => {
+        if (s.step >= 13){ clearInterval(this._timer); return { playing:false }; }
+        return { step: s.step + 1 };
+      });
+    }, 1150 / this.state.speed);
+  }
+  togglePlay = () => {
+    if (this.state.playing){ clearInterval(this._timer); this.setState({ playing:false }); return; }
+    this.setState(s => ({ playing:true, step: s.step >= 13 ? 0 : s.step }), () => this.startTimer());
+  };
+  step = () => this.setState(s => ({ step: Math.min(13, s.step + 1), playing:false }), () => clearInterval(this._timer));
+  prev = () => this.setState(s => ({ step: Math.max(0, s.step - 1), playing:false }), () => clearInterval(this._timer));
+  reset = () => { clearInterval(this._timer); this.setState({ step:0, playing:false }); };
+  toggleAnim = () => this.setState(s => ({ anim: !s.anim }));
+  cycleSpeed = () => this.setState(s => { const sp = s.speed===1?2:s.speed===2?0.5:1; return { speed: sp }; }, () => { if(this.state.playing) this.startTimer(); });
+  locate = (id) => this.setState(s => ({ locate: s.locate === id ? null : id }));
+
+  // ---- static graph definition ----
+  ND(){
+    const C='#22D3EE', E='#34D399', A='#FBBF24', V='#A78BFA';
+    return [
+      { id:'intake', x:40, y:170, ac:C, kf:'pulseCyan', label:'intake', agent:'IntakeAgent.classify', dur:'2.1s',
+        conclusion:'27 条信号分类，3 条 insufficient 过滤为噪声', steps:[0],
+        chips:[['27→24','cyan'],['3 过滤','slate']] },
+      { id:'discovery', x:300, y:170, ac:C, kf:'pulseCyan', label:'discovery', agent:'DiscoveryAgent.cluster', dur:'3.4s',
+        conclusion:'聚为 3 簇，焦点 clu-01（critical · freq=10）', steps:[1],
+        chips:[['clu-01 critical','rose'],['clu-02 DUP→ex-01','violet'],['clu-03 high','cyan']] },
+      { id:'competitor_research', x:560, y:30, ac:C, kf:'pulseCyan', label:'competitor_research', agent:'CompetitorAgent.research', dur:'6.8s',
+        conclusion:'Dify ×3：adopt / avoid / watch（cf-03 信息不足）', steps:[2],
+        chips:[['adopt','emerald'],['avoid','rose'],['watch','amber'],['mock://dify.md','amber']] },
+      { id:'tech_research', x:560, y:310, ac:C, kf:'pulseCyan', label:'tech_research', agent:'TechAgent.research', dur:'7.2s',
+        conclusion:'4 方案：状态机 · 心跳超时 · 错误码 · 分块预览', steps:[2],
+        chips:[['reference ×3','cyan'],['experimental ×1','amber'],['mock://tech_notes','amber']] },
+      { id:'quality_gate', x:820, y:170, ac:A, kf:'pulseAmber', label:'quality_gate', agent:'RequirementAgent · gate', dur:'8.3s',
+        conclusion:'R1 total=61 → needs_enrich；补全后 R2 total=86 → pass', steps:[3,5],
+        bar:{ label:'10 维 · R1 61 → R2 86', segs:[[88,'c'],[85,'a'],[86,'a'],[85,'a'],[88,'c'],[84,'c'],[82,'c'],[86,'c'],[88,'c'],[84,'c']] },
+        chips:[['R1 needs_enrich','amber'],['R2 pass','emerald']] },
+      { id:'enrich', x:1080, y:30, ac:E, kf:'pulseEmerald', label:'enrich', agent:'RequirementAgent.enrich', dur:'5.1s',
+        conclusion:'补全 acceptance / non-goals / boundary，total 61→86', steps:[4],
+        chips:[['+7 验收','emerald'],['+4 非目标','emerald'],['+6 边界','emerald'],['Δ +25','cyan']] },
+      { id:'clarify', x:1080, y:310, ac:'#6B7280', kf:null, label:'clarify', agent:'RequirementAgent.clarify', dur:'—', ghost:true,
+        conclusion:'门禁分流分支 · 本轮未触发（gate≠clarify）', steps:[],
+        chips:[['未触发','slate']] },
+      { id:'opportunity', x:40, y:540, ac:E, kf:'pulseEmerald', label:'opportunity', agent:'OpportunityAgent.score', dur:'4.6s',
+        conclusion:'10 维加权 total=86.57 → 优先级 P0 · horizon now', steps:[6],
+        chips:[['total 86.57','emerald'],['P0','rose'],['now','cyan']] },
+      { id:'roadmap', x:300, y:470, ac:C, kf:'pulseCyan', label:'roadmap', agent:'RoadmapAgent.plan', dur:'2.0s',
+        conclusion:'3 项排期：clu-01 P0/now · clu-03 P1/next · clu-02 dup', steps:[7],
+        chips:[['clu-01 P0 now','rose'],['clu-03 P1 next','cyan'],['clu-02 dup','slate']] },
+      { id:'solution', x:300, y:610, ac:C, kf:'pulseCyan', label:'solution', agent:'SolutionAgent.design', dur:'9.4s',
+        conclusion:'9 scope · 5 non-goal · 5 风险 · 5 依赖', steps:[8],
+        chips:[['9 scope','cyan'],['5 non-goal','slate'],['5 风险','amber']] },
+      { id:'code_impact', x:560, y:470, ac:A, kf:'pulseAmber', label:'code_impact', agent:'EngineeringAgent.analyze', dur:'6.1s',
+        conclusion:'4 模块受影响 · 3 个核心模块 risk_tier=high', steps:[9],
+        chips:[['rag/svr core','rose'],['rag/nlp core','rose'],['deepdoc core','rose'],['api/db low','slate']] },
+      { id:'engineering', x:560, y:610, ac:E, kf:'pulseEmerald', label:'engineering', agent:'EngineeringAgent.execute', dur:'11.7s',
+        conclusion:'4 任务 · blocked=false · impl_plan ×4（每步 verify）', steps:[10],
+        chips:[['4 任务','cyan'],['blocked=false','emerald'],['impl ×4','slate']] },
+      { id:'critic', x:820, y:540, ac:V, kf:'pulseViolet', label:'critic', agent:'CriticAgent.review', dur:'5.5s',
+        conclusion:'4 findings · cf-03 demote_to_observation · 闭包 0 违规', steps:[11],
+        chips:[['4 findings','violet'],['1 demote','violet'],['闭包 OK','emerald'],['redo 0/1','slate']] },
+      { id:'human', x:1080, y:470, ac:A, kf:'pulseAmber', label:'human', agent:'HITL.interrupt', dur:'待确认',
+        conclusion:'5 项 pending_confirmations 等待人工确认（核心模块改造）', steps:[12],
+        chips:[['pending ×5','amber'],['interrupt','amber']] },
+      { id:'report', x:1080, y:610, ac:E, kf:'pulseEmerald', label:'report', agent:'ReportAgent.compose', dur:'—',
+        conclusion:'req-01 解析稳定性修复 · P0 · now · 成功率目标 ≥95%', steps:[13],
+        chips:[['req-01','cyan'],['P0 · now','rose']] },
+    ];
+  }
+
+  EDG(){ return [
+    ['intake','discovery','h','',true],
+    ['discovery','competitor_research','h','',true],
+    ['discovery','tech_research','h','',true],
+    ['competitor_research','quality_gate','h','fan-in',true],
+    ['tech_research','quality_gate','h','fan-in',true],
+    ['quality_gate','enrich','h','needs_enrich',true],
+    ['enrich','quality_gate','loop','re-eval',true],
+    ['quality_gate','clarify','h','clarify',false],
+    ['quality_gate','opportunity','wrap','pass',true],
+    ['opportunity','roadmap','h','',true],
+    ['roadmap','solution','v','',true],
+    ['solution','code_impact','h','',true],
+    ['code_impact','engineering','v','',true],
+    ['engineering','critic','h','',true],
+    ['critic','engineering','loop','redo',false],
+    ['critic','tech_research','stub','more_evidence',false],
+    ['critic','human','h','HITL',true],
+    ['human','report','v','',true],
+  ]; }
+
+  chipStyle(kind){
+    const map = {
+      cyan:['#67e8f9','rgba(34,211,238,.10)','rgba(34,211,238,.32)'],
+      emerald:['#6ee7b7','rgba(52,211,153,.10)','rgba(52,211,153,.32)'],
+      amber:['#fcd34d','rgba(251,191,36,.10)','rgba(251,191,36,.32)'],
+      rose:['#fda4af','rgba(251,113,133,.10)','rgba(251,113,133,.32)'],
+      violet:['#c4b5fd','rgba(167,139,250,.10)','rgba(167,139,250,.32)'],
+      slate:['#9CA3AF','rgba(148,163,184,.06)','#2a3340'],
+    };
+    const m = (map[kind] || map.slate);
+    return { color:m[0], background:m[1], border:'1px solid '+m[2], borderRadius:'5px', padding:'2px 6px', font:"600 9.5px 'JetBrains Mono', monospace", whiteSpace:'nowrap' };
+  }
+
+  phaseOf(n, step){
+    if (n.steps.includes(step)) return 'active';
+    if (n.steps.length && Math.min.apply(null, n.steps) < step) return 'done';
+    return 'pending';
+  }
+
+  edgePath(f, t, kind){
+    const W=this.W, H=this.H;
+    if (kind==='v'){
+      const x1=f.x+W/2, y1=f.y+H, x2=t.x+W/2, y2=t.y;
+      return { d:`M${x1},${y1}C${x1},${y1+48} ${x2},${y2-48} ${x2},${y2}`, lx:(x1+x2)/2, ly:(y1+y2)/2 };
+    }
+    if (kind==='loop'){
+      const up = f.y < 150;
+      const x1=f.x+W/2, x2=t.x+W/2;
+      if (up){ const y1=f.y, y2=t.y; const pk=Math.max(8, Math.min(y1,y2)-72); return { d:`M${x1},${y1}C${x1},${pk} ${x2},${pk} ${x2},${y2}`, lx:(x1+x2)/2, ly:pk }; }
+      const y1=f.y+H, y2=t.y+H; const pk=Math.min(this.CH-6, Math.max(y1,y2)+82); return { d:`M${x1},${y1}C${x1},${pk} ${x2},${pk} ${x2},${y2}`, lx:(x1+x2)/2, ly:pk };
+    }
+    if (kind==='wrap'){
+      const x1=f.x+W/2, y1=f.y+H, x2=t.x, y2=t.y+H/2;
+      return { d:`M${x1},${y1}C${x1},${y1+150} ${x2},${y2-150} ${x2},${y2}`, lx:(x1+x2)/2, ly:(y1+y2)/2+8 };
+    }
+    if (kind==='stub'){
+      const x1=f.x, y1=f.y+H/2, x2=x1-130, y2=y1-74;
+      return { d:`M${x1},${y1}C${x1-72},${y1} ${x2+28},${y2+34} ${x2},${y2}`, lx:x2, ly:y2-2 };
+    }
+    const x1=f.x+W, y1=f.y+H/2, x2=t.x, y2=t.y+H/2, cp=Math.max((x2-x1)*0.5,52);
+    return { d:`M${x1},${y1}C${x1+cp},${y1} ${x2-cp},${y2} ${x2},${y2}`, lx:(x1+x2)/2, ly:(y1+y2)/2-13 };
+  }
+
+  renderVals(){
+    const { step, anim, hover, locate, scale, offX, offY } = this.state;
+    const RAW = this.ND();
+    const byId = {}; RAW.forEach(n => byId[n.id] = n);
+
+    const nodes = RAW.map(n => {
+      const phase = n.ghost ? 'ghost' : this.phaseOf(n, step);
+      const active = phase==='active', done = phase==='done', pending = phase==='pending', ghost = phase==='ghost';
+      const dotColor = active ? n.ac : done ? '#34D399' : '#6B7280';
+      const originX = n.x < this.CW*0.30 ? 'left' : n.x > this.CW*0.66 ? 'right' : 'center';
+      const originY = n.y < 150 ? 'top' : n.y > 300 ? 'bottom' : 'center';
+      const isHover = hover === n.id;
+      const isLoc = locate === n.id;
+      const style = {
+        position:'absolute', left:n.x+'px', top:n.y+'px', width:this.W+'px', minHeight:this.H+'px',
+        boxSizing:'border-box', padding:'9px 11px 10px', borderRadius:'11px',
+        borderTop:'3px solid '+n.ac, border:'1px solid '+(active?n.ac:done?'#2c3a44':'#1d2530'),
+        borderTopColor:n.ac, borderTopWidth:'3px',
+        background: active ? '#161C28' : done ? '#141a25' : '#10141d',
+        opacity: ghost?0.34 : pending?0.5 : 1,
+        cursor:'pointer', transition:'transform .18s cubic-bezier(.22,.61,.36,1), opacity .25s, box-shadow .25s',
+        transformOrigin: originX+' '+originY,
+        zIndex: isHover?60 : active?20 : 5,
+      };
+      if (ghost){ style.borderStyle='dashed'; style.borderColor='#39334d'; style.borderTopColor='#5b5378'; }
+      if (active && anim) style.animation = n.kf+' 2.2s ease-in-out infinite';
+      else if (active) style.boxShadow = '0 0 0 1px '+n.ac+', 0 0 24px rgba(34,211,238,.28)';
+      if (isLoc) style.boxShadow = '0 0 0 2px #FBBF24, 0 0 26px rgba(251,191,36,.5)';
+      if (isHover){ style.transform = 'scale('+(1/scale*0.92)+')'; style.opacity = 1; style.zIndex=60; style.boxShadow='0 18px 50px rgba(0,0,0,.7), 0 0 0 1px '+n.ac; style.animation='none'; }
+
+      const dotStyle = { width:'9px', height:'9px', borderRadius:'50%', flexShrink:0, background:dotColor };
+      if (active){ dotStyle.boxShadow = '0 0 9px '+n.ac; if(anim) dotStyle.animation='dotPulse 1.4s ease-in-out infinite'; }
+
+      let bar = null;
+      if (n.bar){
+        bar = { label:n.bar.label, segs: n.bar.segs.map(([sc,c]) => ({ style:{
+          flex:1, height:(sc*0.26)+'px', borderRadius:'2px 2px 0 0',
+          background: c==='a' ? 'linear-gradient(180deg,#FBBF24,#b27d12)' : 'linear-gradient(180deg,#22D3EE,#1c7c8c)',
+          opacity: (active||done)?1:0.45
+        } })) };
+      }
+      const chips = n.chips.map(([t,k]) => ({ text:t, style:this.chipStyle(k) }));
+      return { id:n.id, label:n.label, agent:n.agent, dur:n.dur, conclusion:n.conclusion, style, dotStyle, chips, bar,
+        onEnter:()=>this.setState({hover:n.id}), onLeave:()=>this.setState(s=>s.hover===n.id?{hover:null}:null) };
+    });
+
+    const edges = [], edgeLabels = [];
+    this.EDG().forEach(([fid,tid,kind,label,taken]) => {
+      const f=byId[fid], t=byId[tid]; if(!f||!t) return;
+      const fP = f.ghost?'ghost':this.phaseOf(f,step), tP = t.ghost?'ghost':this.phaseOf(t,step);
+      const { d, lx, ly } = this.edgePath(f, t, kind);
+      let stroke='#232A36', width=1.4, dash='1 0', op=0.55, marker='url(#arrDim)', flowAnim=null, lblColor='#6B7280', lblBd='#232A36';
+      if (!taken){ stroke='#5b5378'; width=1.4; dash='5 7'; op=0.5; marker='url(#arrViolet)'; lblColor='#c4b5fd'; lblBd='rgba(167,139,250,.3)'; }
+      else if (tP==='active'){ stroke='#22D3EE'; width=2.4; dash='7 7'; op=1; marker='url(#arrCyan)'; flowAnim='flow .85s linear infinite'; lblColor='#67e8f9'; lblBd='rgba(34,211,238,.4)'; }
+      else if (fP==='done' && (tP==='done')){ stroke='#34D399'; width=1.8; dash='7 8'; op=0.7; marker='url(#arrEmerald)'; flowAnim='flowSlow 2.4s linear infinite'; lblColor='#6ee7b7'; lblBd='rgba(52,211,153,.3)'; }
+      else if (fP==='done'){ stroke='#2f6d63'; width=1.7; dash='7 8'; op=0.6; marker='url(#arrEmerald)'; }
+      const style = { fill:'none', stroke, strokeWidth:width, strokeDasharray:dash, strokeLinecap:'round', opacity:op };
+      if (flowAnim && anim) style.animation = flowAnim;
+      edges.push({ d, style, marker });
+      if (label) edgeLabels.push({ text:label, style:{
+        position:'absolute', left:lx+'px', top:ly+'px', transform:'translate(-50%,-50%)',
+        font:"600 10px 'JetBrains Mono', monospace", color:lblColor,
+        background:'#0d1119', border:'1px solid '+lblBd, borderRadius:'5px', padding:'2px 6px', whiteSpace:'nowrap', pointerEvents:'none', zIndex:8 } });
+    });
+
+    const anomaly = (label, detail, count, kind, node) => {
+      const c = { amber:'#FBBF24', rose:'#FB7185', violet:'#A78BFA', emerald:'#34D399' }[kind];
+      const on = locate===node;
+      return {
+        label, detail, count, node, onClick:()=>this.locate(node),
+        style:{ display:'flex', alignItems:'center', gap:10, padding:'10px 11px', borderRadius:'9px', cursor:'pointer',
+          border:'1px solid '+(on?c:'#232A36'), background:on?'rgba(251,191,36,.06)':'#11161F', transition:'border-color .2s, background .2s' },
+        dotStyle:{ width:'9px', height:'9px', borderRadius:'50%', flexShrink:0, background:c, boxShadow:'0 0 8px '+c },
+        countStyle:{ font:"700 12px 'JetBrains Mono', monospace", color:c, background:'rgba(148,163,184,.06)', border:'1px solid #232A36', borderRadius:'6px', padding:'2px 7px', flexShrink:0 } };
+    };
+    const anomalies = [
+      anomaly('mock:// 证据降级','competitor 3 + tech 4 条来源为 mock','7','amber','tech_research'),
+      anomaly('门禁不达标 (R1)','completeness/testability/acceptance <50','R1','amber','quality_gate'),
+      anomaly('簇判重 DUPLICATE','clu-02 → ex-01 (in_roadmap)','1','violet','discovery'),
+      anomaly('观察项 demote','cf-03 信息不足 → demote_to_observation','1','violet','critic'),
+      anomaly('待人工确认 HITL','5 项核心模块改造 pending_confirmations','5','amber','human'),
+      anomaly('回炉 / 重入','redo 0/1 · more_evidence 0 · 闭包 0 违规','OK','emerald','critic'),
+    ];
+
+    const NAMES=['intake','discovery','research ×2 (并行)','quality_gate','enrich','quality_gate (re-eval)','opportunity','roadmap','solution','code_impact','engineering','critic','human (HITL)','report'];
+    const playing = this.state.playing;
+    return {
+      nodes, edges, edgeLabels, anomalies, stageRef:this.stageRef,
+      canvasW:this.CW, canvasH:this.CH,
+      canvasStyle:{ position:'absolute', left:offX+'px', top:offY+'px', width:this.CW+'px', height:this.CH+'px', transform:'scale('+scale+')', transformOrigin:'top left' },
+      stepLabel:(step+1)+' / 14 · '+NAMES[step],
+      speedLabel:this.state.speed+'×',
+      playGlyph: playing ? '⏸' : '▶',
+      playBtnStyle:{ width:'40px', height:'32px', border:'none', borderRadius:'6px', cursor:'pointer', fontSize:'13px',
+        background: playing ? '#161C28' : '#22D3EE', color: playing ? '#67e8f9' : '#0B0E14',
+        boxShadow: playing ? 'none' : '0 0 16px rgba(34,211,238,.4)' },
+      animLabel: anim ? '动画 ●' : '动画 ○',
+      animBtnStyle:{ height:'32px', padding:'0 12px', borderRadius:'7px', cursor:'pointer', fontSize:'12px', fontFamily:"'JetBrains Mono',monospace", whiteSpace:'nowrap', flexShrink:0,
+        border:'1px solid '+(anim?'rgba(34,211,238,.35)':'#232A36'), background:anim?'rgba(34,211,238,.08)':'#11161F', color:anim?'#67e8f9':'#6B7280' },
+      togglePlay:this.togglePlay, step:this.step, prev:this.prev, reset:this.reset, toggleAnim:this.toggleAnim, cycleSpeed:this.cycleSpeed,
+    };
+  }
+}
+</script>
+</body>
+</html>

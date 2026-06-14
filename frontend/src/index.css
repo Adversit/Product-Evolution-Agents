@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0b0e14;
+}
+
+#root {
+  /* the observatory owns the full viewport */
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: #232a36;
+  border-radius: 6px;
+}
+
+/* --- pipeline motion (ported 1:1 from the design) --- */
+@keyframes flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+@keyframes flowSlow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+@keyframes pulseCyan {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.55), 0 0 18px rgba(34, 211, 238, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.95), 0 0 34px rgba(34, 211, 238, 0.5);
+  }
+}
+@keyframes pulseEmerald {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.55), 0 0 18px rgba(52, 211, 153, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.95), 0 0 34px rgba(52, 211, 153, 0.5);
+  }
+}
+@keyframes pulseAmber {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.55), 0 0 18px rgba(251, 191, 36, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.95), 0 0 34px rgba(251, 191, 36, 0.5);
+  }
+}
+@keyframes pulseViolet {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.55), 0 0 18px rgba(167, 139, 250, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.95), 0 0 34px rgba(167, 139, 250, 0.5);
+  }
+}
+@keyframes dotPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes drawerIn {
+  from {
+    transform: translateX(18px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
