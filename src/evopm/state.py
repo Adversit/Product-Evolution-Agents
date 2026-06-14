@@ -7,7 +7,8 @@ competitor_findings / tech_findings 两个分写 key 避免 reducer 冲突。所
 
 from __future__ import annotations
 
-from typing import TypedDict
+import operator
+from typing import Annotated, TypedDict
 
 from evopm.schemas import (
     CodeImpactMap,
@@ -50,6 +51,8 @@ class EvoPMState(TypedDict, total=False):
     code_impact: CodeImpactMap
     execution: ExecutionProposal
     # 治理
+    # 各节点证据闭包校验剔除的非法引用，累加（reducer：并行 research 节点都写此 key）→ 喂给 critic
+    evidence_violations: Annotated[list[str], operator.add]
     critic_review: CriticReview
     redo_rounds: int  # 初始 0，回炉后 +1，上限 1
     clarify_rounds: int  # interrupt② 人工澄清轮次，初始 0，上限 1（超限降级 ROUTE_SUPPORT 出报告）

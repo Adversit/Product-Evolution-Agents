@@ -101,7 +101,12 @@ def select_cluster_node(state: EvoPMState) -> dict[str, Any]:
     cluster_id = resume.get("cluster_id") if isinstance(resume, dict) else None
     valid = {c.id for c in clusters}
     if cluster_id not in valid:  # 兜底：非法 id 退回最大频次簇（与 replay 预设一致）
-        cluster_id = max(clusters, key=lambda c: c.frequency).id if clusters else ""
+        # 跳过 duplicate/insufficient（这类不能作焦点 P0），并列/无可选时退回全体最大频次。
+        selectable = [
+            c for c in clusters if c.status.value not in ("duplicate", "insufficient")
+        ]
+        pool = selectable or clusters
+        cluster_id = max(pool, key=lambda c: c.frequency).id if pool else ""
     return {"selected_cluster_id": cluster_id}
 
 
@@ -123,8 +128,8 @@ def competitor_research_node(state: EvoPMState) -> dict[str, Any]:
     agent = ResearchAgent(mode="competitor")
     out = agent.run(cluster=cluster, product_context=pc, run_mode=run_mode)
     valid_ids = collect_valid_ids(dict(state))
-    clean, _ = validate_evidence_refs(out, valid_ids)
-    return {"competitor_findings": list(clean.findings)}
+    clean, viol = validate_evidence_refs(out, valid_ids)
+    return {"competitor_findings": list(clean.findings), "evidence_violations": viol}
 
 
 def tech_research_node(state: EvoPMState) -> dict[str, Any]:
@@ -134,8 +139,8 @@ def tech_research_node(state: EvoPMState) -> dict[str, Any]:
     agent = ResearchAgent(mode="tech")
     out = agent.run(cluster=cluster, product_context=pc, run_mode=run_mode)
     valid_ids = collect_valid_ids(dict(state))
-    clean, _ = validate_evidence_refs(out, valid_ids)
-    return {"tech_findings": list(clean.findings)}
+    clean, viol = validate_evidence_refs(out, valid_ids)
+    return {"tech_findings": list(clean.findings), "evidence_violations": viol}
 
 
 def route_research_out(state: EvoPMState) -> Literal["quality_gate", "critic"]:
@@ -165,14 +170,18 @@ def quality_gate_node(state: EvoPMState) -> dict[str, Any]:
     tfs = state.get("tech_findings", [])
     valid_ids = collect_valid_ids(dict(state))
     agent = RequirementAgent()
-    candidate, _ = agent.draft_and_score(
+    candidate, viol = agent.draft_and_score(
         cluster=cluster,
         competitor_findings=cfs,
         tech_findings=tfs,
         human_supplement=human_supplement,
         valid_ids=valid_ids,
     )
-    return {"focus_candidate": candidate, "_clarify_supplement": ""}
+    return {
+        "focus_candidate": candidate,
+        "_clarify_supplement": "",
+        "evidence_violations": viol,
+    }
 
 
 def route_gate(
@@ -202,7 +211,7 @@ def enrich_node(state: EvoPMState) -> dict[str, Any]:
     tfs = state.get("tech_findings", [])
     valid_ids = collect_valid_ids(dict(state))
     agent = RequirementAgent()
-    enriched, _ = agent.enrich(
+    enriched, viol = agent.enrich(
         candidate=candidate,
         cluster=cluster,
         competitor_findings=cfs,
@@ -212,6 +221,7 @@ def enrich_node(state: EvoPMState) -> dict[str, Any]:
     return {
         "focus_candidate": enriched,
         "enrich_rounds": state.get("enrich_rounds", 0) + 1,
+        "evidence_violations": viol,
     }
 
 
@@ -263,7 +273,7 @@ def opportunity_node(state: EvoPMState) -> dict[str, Any]:
     tfs = state.get("tech_findings", [])
     valid_ids = collect_valid_ids(dict(state))
     agent = StrategyAgent()
-    decision, roadmap, _ = agent.score(
+    decision, roadmap, viol = agent.score(
         focus_candidate=candidate,
         clusters=clusters,
         product_context=pc,
@@ -271,7 +281,7 @@ def opportunity_node(state: EvoPMState) -> dict[str, Any]:
         tech_findings=tfs,
         valid_ids=valid_ids,
     )
-    return {"opportunity": decision, "roadmap": list(roadmap)}
+    return {"opportunity": decision, "roadmap": list(roadmap), "evidence_violations": viol}
 
 
 # --------------------------------------------------------------------------- #
@@ -285,14 +295,14 @@ def solution_design_node(state: EvoPMState) -> dict[str, Any]:
     tfs = state.get("tech_findings", [])
     valid_ids = collect_valid_ids(dict(state))
     agent = StrategyAgent()
-    solution, _ = agent.design(
+    solution, viol = agent.design(
         focus_candidate=candidate,
         opportunity=opportunity,
         competitor_findings=cfs,
         tech_findings=tfs,
         valid_ids=valid_ids,
     )
-    return {"solution": solution}
+    return {"solution": solution, "evidence_violations": viol}
 
 
 # --------------------------------------------------------------------------- #
@@ -360,10 +370,12 @@ def critic_node(state: EvoPMState) -> dict[str, Any]:
     conclusions = _assemble_conclusions(state)
     ci = state.get("code_impact")
     high_risk_items = list(ci.human_confirmation_needed) if ci is not None else []
+    # 各节点累加的闭包 violations（去重保序），喂给 Critic 作悬空引用输入。
+    violations = list(dict.fromkeys(state.get("evidence_violations", []) or []))
     agent = CriticAgent()
     review = agent.run(
         conclusions=conclusions,
-        violations=[],
+        violations=violations,
         high_risk_items=high_risk_items,
         redo_rounds=redo_rounds,
     )

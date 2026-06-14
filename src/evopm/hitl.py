@@ -282,7 +282,11 @@ def auto_resume(payload: dict) -> dict:
         clusters = payload.get("clusters", [])
         if not clusters:
             raise ValueError("select_cluster payload 无候选簇，无法自动选择。")
-        largest = max(clusters, key=lambda c: c.get("frequency", 0))
+        # 跳过 duplicate/insufficient（不能作焦点 P0）；无可选时退回全体最大频次。
+        selectable = [
+            c for c in clusters if c.get("status") not in ("duplicate", "insufficient")
+        ]
+        largest = max(selectable or clusters, key=lambda c: c.get("frequency", 0))
         return {"cluster_id": str(largest.get("id"))}
     if ptype == "clarify":
         return {"action": "force_pass", "text": ""}

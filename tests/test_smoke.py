@@ -543,12 +543,13 @@ def test_degrade(monkeypatch):
 def test_replay_e2e(monkeypatch):
     """完整 replay 端到端：4 报告 / quality.round==2 / total 提升 / blocked==False / 闭包合法。
 
-    读取提交进仓库的缓存 fixture（tests/replay_cache/，glm-4.5-air 生成），**无需 key、可离线运行**。
+    读取提交进仓库的缓存 fixture（tests/replay_cache_glm51/，glm-5.1 生成 = 演示主链同款缓存），
+    **无需 key、可离线运行**。用 glm-5.1 缓存而非 air：演示主路径用的就是它，且其聚类把焦点簇
+    标 known（非 duplicate），与「选簇跳过 duplicate/insufficient」的新逻辑一致、全链命中缓存。
     """
     monkeypatch.chdir(_repo_root())
-    # 用提交进仓库的缓存 fixture（glm-4.5-air 生成），保证离线 / CI / 任意 EVOPM_MODEL 下可复现。
-    monkeypatch.setenv("EVOPM_MODEL", "glm-4.5-air")
-    monkeypatch.setattr(llm, "CACHE_DIR", _repo_root() / "tests" / "replay_cache")
+    monkeypatch.setenv("EVOPM_MODEL", "glm-5.1")
+    monkeypatch.setattr(llm, "CACHE_DIR", _repo_root() / "tests" / "replay_cache_glm51")
     llm.reset_budget()
     llm.set_run_mode("replay")
 
