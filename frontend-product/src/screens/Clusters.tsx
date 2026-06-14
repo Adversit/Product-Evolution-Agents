@@ -1,7 +1,7 @@
 // Screen 3 — 问题簇总览. 3 cluster cards (focus ⭐ / DUPLICATE→ex-01 / known) with
 // priority/severity/status chips + frequency bar, plus the 5 filtered signals.
 import type { CSSProperties } from "react";
-import { D } from "../data/state";
+import { useData } from "../data/DataContext";
 import { pill, priMeta } from "../lib/theme";
 
 const sevMeta: Record<string, { l: string; c: string; bg: string; bd: string }> = {
@@ -15,6 +15,7 @@ const statusMeta: Record<string, { l: string; c: string; bg: string; bd: string 
 const amLabel: Record<string, string> = { insufficient: "信息不足", emotional: "情绪宣泄", suspected_misuse: "疑似误用" };
 
 export default function Clusters() {
+  const D = useData();
   return (
     <section style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 34px 64px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>

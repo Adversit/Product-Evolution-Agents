@@ -3,13 +3,14 @@
 // Also drives the 初评/终评 toggle re-tween. Ports _growRadar / _tweenTotal /
 // setRound from the design's Component class.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { D } from "../data/state";
 
 const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3);
 
-export function useEntrance() {
+// total_r1 / total_r2 come from the active dataset (live or offline sample); the
+// entrance rolls r1 → r2 on mount and the toggle re-tweens between them.
+export function useEntrance(totalR1 = 61, totalR2 = 86) {
   const [t, setT] = useState(0);
-  const [total, setTotal] = useState(61);
+  const [total, setTotal] = useState(totalR1);
   const [round, setRound] = useState(1);
   const rafA = useRef(0);
   const rafB = useRef(0);
@@ -38,14 +39,14 @@ export function useEntrance() {
     rafA.current = requestAnimationFrame(step);
   }, []);
 
-  // mount: emphasize 终评, roll 61→86, grow radar; hard fallback at 1.5s.
+  // mount: emphasize 终评, roll r1→r2, grow radar; hard fallback at 1.5s.
   useEffect(() => {
     setRound(2);
-    tween(61, 86, 1100, 250);
+    tween(totalR1, totalR2, 1100, 250);
     growRadar(900, 250);
     fallback.current = setTimeout(() => {
       setT(1);
-      setTotal(86);
+      setTotal(totalR2);
       setRound(2);
     }, 1500);
     return () => {
@@ -54,13 +55,13 @@ export function useEntrance() {
       clearTimeout(fallback.current);
       clearTimeout(fallback2.current);
     };
-  }, [tween, growRadar]);
+  }, [tween, growRadar, totalR1, totalR2]);
 
   const switchRound = useCallback(
     (r: number) => {
       setRound((cur) => {
         if (r === cur) return cur;
-        const to = r === 2 ? D.QUALITY.total_r2 : D.QUALITY.total_r1;
+        const to = r === 2 ? totalR2 : totalR1;
         setTotal((from) => {
           tween(from, to, 600, 0);
           return from;
@@ -70,7 +71,7 @@ export function useEntrance() {
         return r;
       });
     },
-    [tween],
+    [tween, totalR1, totalR2],
   );
 
   return { t, total, round, switchRound };

@@ -1,7 +1,8 @@
 // Screen 2 — 概览仪表盘. 4 KPI cards + 27→5→9→3→1 decision funnel + P0 结论 card.
-import { D } from "../data/state";
+import { useData } from "../data/DataContext";
 
 export default function Overview() {
+  const D = useData();
   return (
     <section style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 34px 64px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>

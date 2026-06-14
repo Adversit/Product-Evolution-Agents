@@ -1,11 +1,14 @@
-// Evidence chip + click-anywhere popover. Ports openEvidence / openEvidenceInline /
-// the .dc.html popover markup. A chip click anchors a fixed popover showing 类型
-// badge, ref, 强度 badge, 原文摘录, 来源 (mock:// flagged as 「本地材料 · 证据强度封顶
-// moderate」). Click-outside closes. Weak/no_direct refs render as a downgraded chip.
+// Evidence chip + click-anywhere popover. A chip click anchors a fixed popover
+// showing 类型 badge, ref, 强度 badge, 原文摘录, 来源 (mock:// flagged as 「本地材料 ·
+// 证据强度封顶 moderate」). Live mode fetches GET /api/evidence/{ref} on open (the
+// adapted in-context D.EVIDENCE is the fallback / offline source). Click-outside
+// closes. Weak/no_direct refs render as a downgraded chip.
 import { createContext, useCallback, useContext, useState } from "react";
 import type { ReactNode, MouseEvent } from "react";
-import { D } from "../data/state";
 import type { EvidenceEntry } from "../data/state";
+import { useData } from "../data/DataContext";
+import { evidenceFromCard } from "../data/adapt";
+import { fetchEvidence } from "../lib/api";
 import { chipStyle, isWeak, strengthMeta, typeMeta } from "../lib/theme";
 
 interface EvState {
@@ -25,15 +28,27 @@ export function useEvidence(): EvCtx {
   return useContext(Ctx);
 }
 
-export function EvidenceProvider({ children }: { children: ReactNode }) {
+export function EvidenceProvider({ children, offline = false }: { children: ReactNode; offline?: boolean }) {
+  const D = useData();
   const [state, setState] = useState<EvState | null>(null);
 
-  const open = useCallback((ref: string, e: MouseEvent, inline?: EvidenceEntry) => {
-    const entry = inline || D.EVIDENCE[ref];
-    if (!entry) return;
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setState({ ref, entry, x: r.left, y: r.bottom + 8 });
-  }, []);
+  const open = useCallback(
+    (ref: string, e: MouseEvent, inline?: EvidenceEntry) => {
+      const entry = inline || D.EVIDENCE[ref];
+      if (!entry) return;
+      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const popped: EvState = { ref, entry, x: r.left, y: r.bottom + 8 };
+      setState(popped);
+      // Live: refresh from the backend evidence endpoint (best-effort, keeps anchor).
+      if (!offline && !inline) {
+        fetchEvidence(ref).then((card) => {
+          if (!card) return;
+          setState((cur) => (cur && cur.ref === ref ? { ...cur, entry: evidenceFromCard(card) } : cur));
+        });
+      }
+    },
+    [D, offline],
+  );
 
   const close = useCallback(() => setState(null), []);
 
@@ -96,6 +111,7 @@ function Popover({ state, onClose }: { state: EvState; onClose: () => void }) {
 
 // A single evidence ref chip. Uses the global popover via context.
 export function EvidenceChip({ refId }: { refId: string }) {
+  const D = useData();
   const { open } = useEvidence();
   const [hover, setHover] = useState(false);
   const entry = D.EVIDENCE[refId];

@@ -1,6 +1,6 @@
 // Screen 4 — 机会评分 · 路线图. 10-dim weighted bars (total 86.6) + Now/Next/Later board.
 import type { CSSProperties } from "react";
-import { D } from "../data/state";
+import { useData } from "../data/DataContext";
 import { pill, priMeta } from "../lib/theme";
 
 const barColor = (score: number) => (score >= 90 ? "#1B1C1E" : score >= 84 ? "#56595F" : "#8A8F98");
@@ -12,6 +12,7 @@ const rmMeta: Record<string, { l: string; c: string; dot: string }> = {
 };
 
 export default function Opportunity() {
+  const D = useData();
   return (
     <section style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 34px 64px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>

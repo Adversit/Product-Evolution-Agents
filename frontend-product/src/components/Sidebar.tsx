@@ -1,6 +1,7 @@
 // Left nav — 6 decision-flow screens, active-state styling, off-white #FBFBFA.
 import type { CSSProperties, ReactNode } from "react";
 import type { Screen } from "../App";
+import { useData } from "../data/DataContext";
 
 const navBase: CSSProperties = {
   display: "flex",
@@ -50,6 +51,7 @@ const icons: Record<Screen, ReactNode> = {
 };
 
 export default function Sidebar({ screen, go }: { screen: Screen; go: (s: Screen) => void }) {
+  const p = useData().PRODUCT;
   return (
     <aside style={{ width: 244, flexShrink: 0, background: "#FBFBFA", borderRight: "1px solid #ECECEA", display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: "20px 18px 16px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -77,7 +79,7 @@ export default function Sidebar({ screen, go }: { screen: Screen; go: (s: Screen
       <div style={{ marginTop: "auto", padding: "14px 18px", borderTop: "1px solid #ECECEA" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#8A8F98" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1A7F37", boxShadow: "0 0 0 3px rgba(24,24,27,.10)" }} />
-          replay 运行 · LLM 调用 0
+          {(p.runMode || "replay")} 运行 · LLM 调用 {p.llmCalls}
         </div>
       </div>
     </aside>

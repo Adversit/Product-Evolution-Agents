@@ -1,7 +1,7 @@
 // Screen 5 — 研发执行. Code-impact core modules (⚠ core / risk tiers + verify
 // points), 待确认模块, 建议实施顺序, 任务卡 (4 of 12), 风险与缓解 (5).
 import type { CSSProperties } from "react";
-import { D } from "../data/state";
+import { useData } from "../data/DataContext";
 import { pill } from "../lib/theme";
 import { EvidenceChip } from "../components/Evidence";
 
@@ -19,6 +19,7 @@ const typeMeta: Record<string, { c: string; bg: string; bd: string }> = {
 const sectionMark = (color: string): CSSProperties => ({ width: 3, height: 15, background: color, borderRadius: 2 });
 
 export default function Engineering() {
+  const D = useData();
   const risks = D.RISKS.map((r, i) => {
     const ci = r.indexOf("：");
     return { head: ci > 0 ? r.slice(0, ci) : "风险 " + (i + 1), body: ci > 0 ? r.slice(ci + 1) : r, idx: String(i + 1).padStart(2, "0") };
@@ -96,7 +97,7 @@ export default function Engineering() {
         <span style={{ fontSize: 11, color: "#8A8F98" }}>关键 4 张（共 12 张）</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 11, marginBottom: 30 }}>
-        {D.TASKS.map((t) => {
+        {D.TASKS.slice(0, 4).map((t) => {
           const tm = typeMeta[t.type] || typeMeta.backend;
           const rm = riskMeta[t.risk] || riskMeta.medium;
           return (

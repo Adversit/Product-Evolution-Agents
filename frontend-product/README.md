@@ -36,26 +36,54 @@ legend/toggle); green `#1A7F37`/`#E9F6EC` is reserved for semantics (gate PASS,
   badge, ref, 强度 badge, 原文摘录, 来源 (`mock://` flagged as「本地材料 · 证据强度封顶
   moderate」). weak/no_direct refs render downgraded (dashed). Click-outside closes.
 
+## Data source — live API with offline fallback
+
+The workbench now loads from the **live backend** (`evopm-server`, FastAPI on
+`http://127.0.0.1:8000`; contract: `docs/frontend_api.md`). On mount, `App.tsx`
+fetches `GET /api/state` (calling `POST /api/run` + polling `GET /api/status` first
+if no run exists), adapts the response to the screen view-model, and supplies it via
+React context. Evidence chips fetch `GET /api/evidence/{ref}` on click; the report
+center renders `GET /api/reports/{name}` markdown.
+
+If the backend is unreachable, the app **falls back to the embedded sample** in
+`src/data/state.ts` and flags it in the header as「离线样例 · offline sample」— it
+never shows a blank screen.
+
+- API client: `src/lib/api.ts` (`fetchState` / `fetchReports` / `fetchReport` /
+  `fetchEvidence` / `startRun` / `ensureState`). Override the origin with
+  `VITE_API_BASE` (default `http://127.0.0.1:8000`).
+- Adapter: `src/data/adapt.ts` maps the live `/api/state` (+ `derived`) onto the
+  `DecisionData` view-model the screens consume.
+
 ## Run
 
 ```bash
+# 1) backend — from the repo root (serves :8000, auto-runs one replay on boot)
+evopm-server                     # or: python -m evopm.server
+
+# 2) frontend
 cd frontend-product
 npm install
-npm run dev      # http://localhost:5174
+npm run dev      # http://localhost:5174  (set VITE_API_BASE to point elsewhere)
 npm run build    # tsc --noEmit + production bundle into dist/
 npm run preview  # serve the production build
 ```
+
+With no backend running, `npm run dev` still works and shows the offline sample.
 
 ## Structure
 
 ```
 src/
-  App.tsx                shell: sidebar + header + screen switcher
-  data/state.ts          typed canonical dataset (the .dc.html `D` object)
+  App.tsx                shell + live-state load / adapt / offline fallback
+  lib/api.ts             live backend client (state/reports/evidence/run)
+  data/adapt.ts          live /api/state (+derived) → DecisionData view-model
+  data/DataContext.tsx   provides the active dataset to screens via useData()
+  data/state.ts          typed offline-sample dataset (the .dc.html `D` object)
   lib/theme.ts           light tokens + strength/type/chip/pill style helpers
-  hooks/useEntrance.ts   radar-grow + 61→86 roll + round-toggle tween
+  hooks/useEntrance.ts   radar-grow + r1→r2 roll + round-toggle tween
   components/
-    Sidebar.tsx  Header.tsx  Radar.tsx  Evidence.tsx
+    Sidebar.tsx  Header.tsx  Radar.tsx  Evidence.tsx  Markdown.tsx
   screens/
     Hero.tsx  Overview.tsx  Clusters.tsx  Opportunity.tsx
     Engineering.tsx  Reports.tsx
@@ -63,9 +91,10 @@ src/
 
 ## Notes
 
-- The data is a **static replay sample** curated from a glm-5.1 run (inlined in the
-  design's `D` object, cross-checked against `uploads/sample_state.json` + the four
-  reports). There is **no backend wiring yet**.
+- Data is **live** from `evopm-server` (`/api/state` + `derived`), adapted in
+  `data/adapt.ts`. The embedded `data/state.ts` remains as the offline sample —
+  a glm-5.1 replay snapshot cross-checked against `uploads/sample_state.json` + the
+  four reports — used only when the backend is unreachable.
 - Geometry, colors, copy, and animations are ported faithfully from the design file
   to stay pixel-faithful. Inline styles match the design's inline-styled approach.
 
@@ -84,5 +113,5 @@ src/
 | 报告中心 — 4 reports + reading pane | ✅ |
 | Evidence popovers (sig/cf/tf, mock flag, weak downgrade) | ✅ |
 | Left-nav switching + active state | ✅ |
-| Backend live data (`/ws` + `/api/state`) | ⬜ static replay only |
+| Backend live data (`/api/state` + `/api/reports` + `/api/evidence`) | ✅ live, with offline-sample fallback |
 ```

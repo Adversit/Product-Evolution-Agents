@@ -3,16 +3,17 @@
 // and the competitor/tech evidence sidebar.
 import { useState } from "react";
 import type { CSSProperties } from "react";
-import { D } from "../data/state";
+import { useData } from "../data/DataContext";
+import type { Competitor, Tech } from "../data/state";
 import Radar from "../components/Radar";
 import { EvidenceChip, useEvidence } from "../components/Evidence";
 import { useEntrance } from "../hooks/useEntrance";
 import { strengthMeta } from "../lib/theme";
 
-const f = D.FOCUS;
-
 export default function Hero() {
-  const { t, total, round, switchRound } = useEntrance();
+  const D = useData();
+  const f = D.FOCUS;
+  const { t, total, round, switchRound } = useEntrance(D.QUALITY.total_r1, D.QUALITY.total_r2);
   const [open, setOpen] = useState({ pain: true, stories: false, ac: false, scope: false });
 
   const allOpen = open.pain && open.stories && open.ac && open.scope;
@@ -187,6 +188,7 @@ function DetailToolbar({ allOpen, onToggle }: { allOpen: boolean; onToggle: () =
 }
 
 function PainModule({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const f = useData().FOCUS;
   return (
     <div style={moduleCard}>
       <ModuleHeader title="痛点与背景" summary="用户痛点 · 背景 · 目标用户" open={open} onToggle={onToggle} />
@@ -215,6 +217,7 @@ function PainModule({ open, onToggle }: { open: boolean; onToggle: () => void })
 }
 
 function StoriesModule({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const f = useData().FOCUS;
   return (
     <div style={moduleCard}>
       <ModuleHeader title="用户故事" summary="3 条 · 角色 / 场景 / 价值" open={open} onToggle={onToggle} />
@@ -246,6 +249,7 @@ function StoriesModule({ open, onToggle }: { open: boolean; onToggle: () => void
 }
 
 function AcModule({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const f = useData().FOCUS;
   const acs = f.acceptance_criteria;
   return (
     <div style={moduleCard}>
@@ -279,6 +283,7 @@ function AcModule({ open, onToggle }: { open: boolean; onToggle: () => void }) {
 }
 
 function ScopeModule({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const f = useData().FOCUS;
   return (
     <div style={moduleCard}>
       <ModuleHeader title="范围 · 非目标 · 边界" open={open} onToggle={onToggle} />
@@ -344,6 +349,7 @@ const vdMeta: Record<string, { label: string; color: string; bg: string; bd: str
 const groupTag = (m: { color: string; bg: string; bd: string }): CSSProperties => ({ display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 700, letterSpacing: ".3px", padding: "2px 8px", borderRadius: 5, color: m.color, background: m.bg, border: "1px solid " + m.bd });
 
 function CompetitorPanel() {
+  const D = useData();
   const { open } = useEvidence();
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #E6E6E4", borderRadius: 12, padding: 16, boxShadow: "0 1px 2px rgba(0,0,0,.03)" }}>
@@ -378,7 +384,7 @@ function CompetitorPanel() {
   );
 }
 
-function CompetitorCard({ c, onClick }: { c: (typeof D.COMPETITORS)[number]; onClick: (e: React.MouseEvent) => void }) {
+function CompetitorCard({ c, onClick }: { c: Competitor; onClick: (e: React.MouseEvent) => void }) {
   const [hover, setHover] = useState(false);
   const short = c.conclusion.length > 60 ? c.conclusion.slice(0, 58) + "…" : c.conclusion;
   return (
@@ -409,6 +415,7 @@ const mtMeta: Record<string, { label: string; color: string; bg: string; bd: str
 const costMeta: Record<string, { l: string; c: string }> = { low: { l: "low", c: "#1B1C1E" }, medium: { l: "med", c: "#8A8F98" }, high: { l: "high", c: "#1B1C1E" } };
 
 function TechPanel() {
+  const D = useData();
   const { open } = useEvidence();
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #E6E6E4", borderRadius: 12, padding: 16, boxShadow: "0 1px 2px rgba(0,0,0,.03)" }}>
@@ -444,7 +451,7 @@ function TechPanel() {
   );
 }
 
-function TechRow({ t, onClick }: { t: (typeof D.TECH)[number]; onClick: (e: React.MouseEvent) => void }) {
+function TechRow({ t, onClick }: { t: Tech; onClick: (e: React.MouseEvent) => void }) {
   const [hover, setHover] = useState(false);
   const cm = costMeta[t.cost] || costMeta.medium;
   return (

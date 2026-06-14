@@ -1,10 +1,21 @@
-// Screen 6 — 报告中心. Left report list (4 reports) + reading pane rendering the
-// selected report's blocks. Ports _reportDoc(key) from the design's Component.
-import { useState } from "react";
+// Screen 6 — 报告中心. Left report list (4 reports) + reading pane. The pane renders
+// the live /api/reports/{name} markdown; if the backend is unreachable it falls back
+// to the inlined report blocks built from the active dataset (offline sample).
+import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { D } from "../data/state";
+import { useData } from "../data/DataContext";
+import Markdown from "../components/Markdown";
+import { fetchReport } from "../lib/api";
 
 type ReportKey = "exec" | "opportunity" | "eng" | "prd";
+
+// view key → backend report name (GET /api/reports/{name})
+const BACKEND_NAME: Record<ReportKey, string> = {
+  exec: "executive_summary",
+  opportunity: "opportunity_report",
+  eng: "engineering_report",
+  prd: "prd_draft",
+};
 
 interface Block {
   h: string;
@@ -19,7 +30,7 @@ interface ReportDoc {
   blocks: Block[];
 }
 
-function reportDoc(key: ReportKey): ReportDoc {
+function reportDoc(key: ReportKey, D: ReturnType<typeof useData>): ReportDoc {
   if (key === "exec")
     return {
       title: "管理层摘要 — RAGFlow",
@@ -74,9 +85,30 @@ const REPORTS: { key: ReportKey; title: string; en: string; desc: string }[] = [
   { key: "prd", title: "PRD 草稿", en: "PRD DRAFT", desc: "背景/范围/验收/边界/证据映射" },
 ];
 
+type Pane = { state: "loading" } | { state: "live"; markdown: string } | { state: "fallback" };
+
 export default function Reports() {
+  const D = useData();
   const [sel, setSel] = useState<ReportKey>("opportunity");
-  const doc = reportDoc(sel);
+  const [pane, setPane] = useState<Pane>({ state: "loading" });
+
+  useEffect(() => {
+    let alive = true;
+    setPane({ state: "loading" });
+    fetchReport(BACKEND_NAME[sel])
+      .then((md) => {
+        if (!alive) return;
+        setPane(md && md.trim() ? { state: "live", markdown: md } : { state: "fallback" });
+      })
+      .catch(() => {
+        if (alive) setPane({ state: "fallback" });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [sel]);
+
+  const doc = reportDoc(sel, D);
 
   const monoP: CSSProperties = { margin: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 11.5, lineHeight: 1.75, color: "#56595F", whiteSpace: "pre-wrap", background: "#FFFFFF", border: "1px solid #ECECEA", borderRadius: 10, padding: "14px 16px" };
   const accentP: CSSProperties = { margin: 0, fontSize: 13.5, lineHeight: 1.8, color: "#56595F" };
@@ -115,26 +147,34 @@ export default function Reports() {
 
         {/* reading pane */}
         <div style={{ background: "#FFFFFF", border: "1px solid #E6E6E4", borderRadius: 14, padding: "30px 34px 34px", boxShadow: "0 1px 2px rgba(0,0,0,.03)", minHeight: 540 }}>
-          <div style={{ paddingBottom: 18, borderBottom: "1px solid #ECECEA", marginBottom: 22 }}>
-            <h2 style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-.4px", margin: "0 0 6px", textWrap: "pretty" } as object}>{doc.title}</h2>
-            <div style={{ fontSize: 11.5, color: "#8A8F98" }}>{doc.sub}</div>
-          </div>
-          {doc.blocks.map((b, i) => (
-            <div key={i} style={b.accent ? { marginBottom: 18, background: "#FFFFFF", border: "1px solid #E6E6E4", borderRadius: 11, padding: "15px 17px" } : { marginBottom: 18 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".4px", color: "#1B1C1E", marginBottom: 10 }}>{b.h}</div>
-              {b.p && <div style={b.mono ? monoP : b.accent ? accentP : normP}>{b.p}</div>}
-              {b.list && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                  {b.list.map((li, j) => (
-                    <div key={j} style={{ display: "flex", gap: 10, fontSize: 12.5, lineHeight: 1.7, color: "#56595F" }}>
-                      <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: "50%", background: "#1B1C1E", marginTop: 8 }} />
-                      <span style={{ textWrap: "pretty" } as object}>{li}</span>
+          {pane.state === "live" ? (
+            <Markdown source={pane.markdown} />
+          ) : pane.state === "loading" ? (
+            <div style={{ color: "#8A8F98", fontSize: 12.5, padding: "8px 0" }}>正在加载报告…</div>
+          ) : (
+            <>
+              <div style={{ paddingBottom: 18, borderBottom: "1px solid #ECECEA", marginBottom: 22 }}>
+                <h2 style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-.4px", margin: "0 0 6px", textWrap: "pretty" } as object}>{doc.title}</h2>
+                <div style={{ fontSize: 11.5, color: "#8A8F98" }}>{doc.sub}</div>
+              </div>
+              {doc.blocks.map((b, i) => (
+                <div key={i} style={b.accent ? { marginBottom: 18, background: "#FFFFFF", border: "1px solid #E6E6E4", borderRadius: 11, padding: "15px 17px" } : { marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".4px", color: "#1B1C1E", marginBottom: 10 }}>{b.h}</div>
+                  {b.p && <div style={b.mono ? monoP : b.accent ? accentP : normP}>{b.p}</div>}
+                  {b.list && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                      {b.list.map((li, j) => (
+                        <div key={j} style={{ display: "flex", gap: 10, fontSize: 12.5, lineHeight: 1.7, color: "#56595F" }}>
+                          <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: "50%", background: "#1B1C1E", marginTop: 8 }} />
+                          <span style={{ textWrap: "pretty" } as object}>{li}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              ))}
+            </>
+          )}
         </div>
       </div>
     </section>
