@@ -38,6 +38,8 @@ from evopm.report import render
 # 离线 replay 默认指向提交进仓库的 glm-5.1 缓存（quality 61→86 剧情，无需 key）。
 _REPLAY_CACHE = Path("tests/replay_cache_glm51")
 _REPLAY_MODEL = "glm-5.1"
+# mock/live 的写盘缓存目录（llm 默认 runs/.cache，import 时捕获，避免污染 replay fixture）。
+_DEFAULT_CACHE = llm.CACHE_DIR
 _REPORT_NAMES = (
     "opportunity_report",
     "engineering_report",
@@ -104,8 +106,11 @@ class Runner:
         if mode == "replay":
             os.environ["EVOPM_MODEL"] = _REPLAY_MODEL
             llm.CACHE_DIR = _REPLAY_CACHE
-        elif model:
-            os.environ["EVOPM_MODEL"] = model
+        else:
+            # mock/live：写盘缓存回默认目录，绝不污染提交进仓库的 replay fixture。
+            llm.CACHE_DIR = _DEFAULT_CACHE
+            if model:
+                os.environ["EVOPM_MODEL"] = model
 
         self._thread = threading.Thread(
             target=self._run, args=(data, mode, interactive), daemon=True
