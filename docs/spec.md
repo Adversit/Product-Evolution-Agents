@@ -584,10 +584,12 @@ def structured_call(schema: type[BaseModel], system: str, user: str,
     #    ← 禁用 json_schema；include_raw 用于区分「无 tool call」和「校验失败」
     # 3) 单次请求 timeout=120s，SDK 自身 max_retries=0（重试统一由本函数控制）
     # 4) 重试矩阵：
-    #    - 429/5xx/网络超时 → 指数退避 3 次（1s/4s/16s）
+    #    - 429/5xx/网络超时 → 指数退避 4 次（2/6/15/40s）；并发由全局信号量
+    #      EVOPM_LLM_CONCURRENCY（默认 2）限流，避免 research fan-out 突发并发触发 429(code 1302)
     #    - Pydantic 校验失败 / 模型未返回 tool call（返回纯文本）→ 把错误信息+原始输出
     #      附到 user 末尾重试 1 次
-    #    - 重试穷尽 → 抛 LLMCallFailed（fail-fast，见 §11.2，不静默降级）
+    #    - 重试穷尽 → mock/live 先走缓存兜底（同 schema 样本，见 §11.2），无样本才抛 LLMCallFailed；
+    #      replay 直接抛（精确 key，不兜底）
     # 5) 预算：llm.py 维护模块级计数器；每次「真实」调用（缓存命中不计）前 +1，
     #    超过 30 → 抛 LLMBudgetExceeded。CLI 在每次 run 开始调 reset_budget()。
     #    不通过 state 线程传递（structured_call 看不到 state）。
@@ -604,6 +606,8 @@ def web_search_call(query: str, count: int = 5) -> list[SearchResult]:
 ```
 
 降级链：`run_mode=mock` 强制读本地材料；`live` 先 web_search，`WebSearchUnavailable` 时自动降级并在 finding.source_url 标 `mock://文件名`。
+
+> **结构化输出 schema 约定（防御性，新增节点必守）：** 传给 `structured_call` 的 LLM 输出 schema **必须让关键内容字段保持必填**（禁止整个 schema 全字段带默认值）——否则 GLM 在限流/截断下返回的空 `{}` tool call 会被静默校验通过为「空对象」，绕过重试/兜底直接污染下游（如 `RequirementDraftLLM.title` 漏设必填曾致空候选 + total 0）。列表项模型同理关键字段必填；仅纯容错的嵌套项（如 `DimLLM` 单维评分）可全默认，且下游须能过滤退化项（按 `name in QUALITY_DIMS`）。
 
 ---
 
@@ -722,7 +726,7 @@ evopm  # 无参 = run --data data/demo_kb
 
 明确区分两类失败，禁止混用：
 
-- **LLM 结构化调用失败**（重试穷尽后）→ `LLMCallFailed`，**fail-fast 抛出，不静默兜空对象**。理由：半成品 schema 流向下游会污染证据链且难排查；宁可整条 run 失败并打印是哪个节点哪个 schema。CLI 顶层捕获后给出可读错误 + 提示 `--replay`。
+- **LLM 结构化调用失败**（重试穷尽后）：**mock/live** 先尝试缓存兜底——从 `runs/.cache` 再到打包的 `tests/replay_cache_glm51` 里找一条能通过该 schema 校验的样本顶上，让演示链路不硬崩（`get_fallback_used()` 计数）；**找不到样本 / replay 模式** 才抛 `LLMCallFailed`（fail-fast，不静默兜空对象）。理由：半成品空对象流向下游会污染证据链，宁可用历史真实样本或整条 run 失败并打印是哪个节点哪个 schema。CLI 顶层捕获后给出可读错误 + 提示 `--replay`。
 - **外部数据源失败**（GitHub API / web_search）→ **自动降级 mock**，不中断流程：
   - `GithubUnavailable`（intake 节点捕获）→ 读 `issues_mock.json`，日志 WARN，报告「数据来源」标注「issues 来自 mock」。
   - `WebSearchUnavailable`（research 节点捕获）→ 读 `competitors/*`、`tech_notes/*`，finding.source_url 前缀 `mock://`，evidence_strength 不得高于 `moderate`。
