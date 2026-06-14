@@ -1,5 +1,6 @@
 import { COLORS } from "../lib/theme";
 import type { Pipeline } from "../hooks/usePipeline";
+import { useLive, type Connection } from "../lib/live";
 
 interface Props {
   pipeline: Pipeline;
@@ -11,8 +12,18 @@ const ctrlBtn: React.CSSProperties = {
   background: "#161C28", color: COLORS.ink2, cursor: "pointer", fontSize: 13,
 };
 
+// Connection indicator config: [dot color, label].
+const CONN: Record<Connection, { color: string; label: string }> = {
+  connecting: { color: COLORS.warn, label: "连接中…" },
+  live: { color: COLORS.done, label: "live · 实时后端" },
+  replay: { color: COLORS.active, label: "replay · 离线重放" },
+  offline: { color: COLORS.danger, label: "离线样例 / offline sample" },
+};
+
 export default function Header({ pipeline, stepLabel }: Props) {
   const { playing, anim, speed, togglePlay, step1, prev, reset, toggleAnim, cycleSpeed } = pipeline;
+  const { connection, streaming, rerun } = useLive();
+  const conn = CONN[connection];
 
   return (
     <header
@@ -49,17 +60,35 @@ export default function Header({ pipeline, stepLabel }: Props) {
           display: "flex", alignItems: "center", gap: 8, padding: "5px 11px",
           border: `1px solid ${COLORS.hairline}`, borderRadius: 7, background: COLORS.panel,
         }}
+        title={`后端连接状态：${conn.label}`}
       >
         <span
           style={{
-            width: 7, height: 7, borderRadius: "50%", background: COLORS.loop,
-            boxShadow: `0 0 8px ${COLORS.loop}`, animation: "dotPulse 1.8s ease-in-out infinite",
+            width: 7, height: 7, borderRadius: "50%", background: conn.color,
+            boxShadow: `0 0 8px ${conn.color}`,
+            animation: streaming || connection === "connecting" ? "dotPulse 1.8s ease-in-out infinite" : undefined,
           }}
         />
-        <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono',monospace", color: COLORS.loopSoft }}>
-          run_mode=replay
+        <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono',monospace", color: conn.color }}>
+          {conn.label}
         </span>
       </div>
+
+      <button
+        onClick={rerun}
+        disabled={streaming || connection === "offline"}
+        title={connection === "offline" ? "后端不可达（离线样例模式）" : "重新运行（POST /api/run 并重连 /ws）"}
+        style={{
+          display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 7,
+          border: `1px solid ${streaming || connection === "offline" ? COLORS.hairline : "rgba(52,211,153,.4)"}`,
+          background: streaming || connection === "offline" ? COLORS.panel : "rgba(52,211,153,.08)",
+          color: streaming || connection === "offline" ? COLORS.ink3 : COLORS.doneSoft,
+          cursor: streaming || connection === "offline" ? "not-allowed" : "pointer",
+          font: "600 12px Inter,sans-serif", whiteSpace: "nowrap", flexShrink: 0,
+        }}
+      >
+        {streaming ? "运行中…" : "↻ 重新运行"}
+      </button>
 
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
         <div

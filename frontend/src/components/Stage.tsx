@@ -3,6 +3,7 @@ import { CANVAS_H, CANVAS_W, EDGES, NODES } from "../lib/graph";
 import { edgePath, phaseOf } from "../lib/pipeline";
 import { COLORS } from "../lib/theme";
 import NodeCard from "./NodeCard";
+import type { NodeRuntime } from "../lib/live";
 
 interface Props {
   step: number;
@@ -10,6 +11,7 @@ interface Props {
   hover: string | null;
   located: string | null;
   selected: string | null;
+  nodeRuntime: Record<string, NodeRuntime>;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
 }
@@ -54,7 +56,7 @@ const MARKERS = [
   ["arrViolet", COLORS.loop],
 ] as const;
 
-export default function Stage({ step, anim, hover, located, selected, onHover, onSelect }: Props) {
+export default function Stage({ step, anim, hover, located, selected, nodeRuntime, onHover, onSelect }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const { scale, offX, offY } = useFit(stageRef);
   const byId = useMemo(() => Object.fromEntries(NODES.map((n) => [n.id, n])), []);
@@ -152,6 +154,7 @@ export default function Stage({ step, anim, hover, located, selected, onHover, o
               phase={phaseOf(n, step)}
               scale={scale}
               anim={anim}
+              runtime={nodeRuntime[n.id]}
               isHover={hover === n.id}
               isLocated={located === n.id}
               isSelected={selected === n.id}

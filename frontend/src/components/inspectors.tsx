@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { STATE } from "../data/state";
+import { STATE, type SampleState } from "../data/state";
 import { COLORS } from "../lib/theme";
 
 export interface Inspector {
@@ -156,9 +156,7 @@ const priorityTone = (v: string): Tone => (v === "P0" ? "rose" : v === "P1" ? "a
 
 /* ----------------------------- inspectors ----------------------------- */
 
-const S = STATE;
-
-const INSPECTORS: Record<string, () => Inspector> = {
+const buildInspectors = (S: SampleState): Record<string, () => Inspector> => ({
   intake: () => ({
     title: "intake · 信号分类",
     subtitle: "IntakeAgent.classify — 12 类 category / sentiment / actionability / data_quality",
@@ -642,13 +640,14 @@ const INSPECTORS: Record<string, () => Inspector> = {
       ),
     };
   },
-};
+});
 
 function riskColor(tier: string) {
   return tier === "high" ? COLORS.danger : tier === "medium" ? COLORS.warn : COLORS.hairline;
 }
 
-export function getInspector(nodeId: string): Inspector | null {
-  const fn = INSPECTORS[nodeId];
+// `state` defaults to the embedded fallback snapshot; pass live /api/state when available.
+export function getInspector(nodeId: string, state: SampleState = STATE): Inspector | null {
+  const fn = buildInspectors(state)[nodeId];
   return fn ? fn() : null;
 }

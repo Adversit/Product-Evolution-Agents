@@ -21,10 +21,41 @@ plus the brief's iteration #2 (node-inspection drawer). Mapped against the full
 | ② 节点检视抽屉 — 结构化字段表 + 原始 JSON 双视图 | ✅ 完成 |
 | ③ 断点交互面板 — 3 个 interrupt payload 原样展示 + resume 应答 | ⬜ 未实现 |
 | ④ 异常定位高亮全套 + 时间轴回看 | ◑ 部分（异常点击定位/环高亮 ✅；时间轴 scrubber ⬜） |
-| 后端联调 — `/ws` 事件 + `/api/state` + `/api/funnel` | ⬜ 未实现（当前用静态 replay 数据，见下方 Notes） |
+| 后端联调 — `/ws` 事件 + `/api/state` + `/api/funnel` | ✅ 已接入（实时 + 离线样例兜底，见下方 Live backend） |
 
-**一句话：** 对照交付的设计稿与选定范围（Hero + 节点抽屉）是完整的；整份简报的
-③ 断点面板、④ 时间轴回看、以及后端实时数据接入尚未实现，是下一步工作。
+**一句话：** 对照交付的设计稿与选定范围（Hero + 节点抽屉）是完整的，并已接入真实
+后端（DAG 由真实 `node` 事件点亮，抽屉/侧栏读 `/api/state`）；③ 断点面板、④ 时间轴
+回看仍是下一步工作。
+
+## Live backend
+
+The app now connects to the live EvoPM backend (**evopm-server**, FastAPI, default
+`http://127.0.0.1:8000`; see `docs/frontend_api.md`):
+
+- DAG node lighting is driven by real `/ws` `node` events (14 nodes in execution
+  order). Each node card shows the backend's real `summary` / `elapsed`.
+- On `done`, the app pulls `/api/state` (full `EvoPMState` + a `derived` block) and
+  populates the node-inspection drawer and the sidebar funnel / rounds / budget /
+  anomaly panels from real state.
+- Header shows a **connection indicator** (`live` / `replay` / `连接中` / `离线样例`)
+  and a **重新运行** button (`POST /api/run` then re-streams `/ws`).
+- **Graceful fallback:** if the server is unreachable the app falls back to the
+  embedded `src/data/sample_state.json` snapshot + the fake play timer, and labels
+  itself **离线样例 / offline sample**. It never shows a blank screen.
+
+Override the backend URL with `VITE_API_BASE` (see `.env.example`).
+
+### Run both together
+
+```bash
+# 1) backend (repo root) — boots having already auto-run one replay
+uvicorn evopm.server:app --port 8000      # or however evopm-server is launched
+
+# 2) frontend (this dir)
+cd frontend
+npm install
+npm run dev      # http://localhost:5173 — auto-connects to :8000
+```
 
 ## Run
 
@@ -61,26 +92,31 @@ npm run preview  # serve the production build
 
 ```
 src/
-  App.tsx                  shell: header + stage + sidebar + drawer
-  hooks/usePipeline.ts     play/step/speed/anim state machine
+  App.tsx                  shell + live→pipeline bridge (node events drive the DAG)
+  hooks/usePipeline.ts     play/step/speed/anim state machine (+ syncTo for live)
   lib/
-    graph.ts               14-node + 18-edge graph definition (ported from the design)
+    api.ts                 backend client (startRun/fetchState/fetchFunnel/openEventStream)
+    live.tsx               LiveProvider context: connection, state, node lighting, rerun
+    nodeMap.ts             backend node name → frontend card id + DAG step
+    graph.ts               node + edge graph definition (ported from the design)
     pipeline.ts            phaseOf() + edgePath() bezier routing
     theme.ts               dark-tech palette + chip styles
   components/
-    Header.tsx  Stage.tsx  NodeCard.tsx  Sidebar.tsx
-    NodeDrawer.tsx          drawer shell + structured/JSON toggle
-    inspectors.tsx          per-node structured field views
+    Header.tsx              controls + connection indicator + 重新运行 button
+    Stage.tsx  NodeCard.tsx live summary/elapsed overlay on each card
+    Sidebar.tsx             funnel/rounds/budget/anomaly from live state (+derived)
+    NodeDrawer.tsx          drawer shell + structured/JSON toggle (reads live state)
+    inspectors.tsx          per-node structured field views (state injected)
   data/
-    state.ts                typed view over the run state
-    sample_state.json       real glm-5.1 replay data
+    state.ts                typed view over the run state (embedded fallback)
+    sample_state.json       real glm-5.1 replay data — offline fallback only
 ```
 
 ## Notes
 
-- This is a demo Hero + node drawer. The pipeline data is a static replay sample;
-  there is **no backend wiring yet**. The intended live source (per
-  `docs/frontend_api.md`) is `/ws` events + `/api/state` + `/api/funnel`.
-- The DAG geometry, colors, animations, and node copy are ported 1:1 from the
-  design file to stay pixel-faithful; the node-inspection drawer is the brief's
-  iteration #2, built on the same tokens.
+- **Primary data source = the live API**; the embedded `sample_state.json` is a
+  labeled offline fallback only. The DAG geometry, colors, animations, and base
+  node copy are ported 1:1 from the design file; live `node` events overlay the
+  real per-node `summary` / `elapsed` on top.
+- The node-inspection drawer is the brief's iteration #2, built on the same tokens,
+  and now renders live `/api/state` when connected.

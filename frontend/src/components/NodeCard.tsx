@@ -1,12 +1,14 @@
 import { CANVAS_W, NODE_H, NODE_W, type NodeDef } from "../lib/graph";
 import { chipStyle, COLORS } from "../lib/theme";
 import type { Phase } from "../lib/pipeline";
+import type { NodeRuntime } from "../lib/live";
 
 interface Props {
   node: NodeDef;
   phase: Phase;
   scale: number;
   anim: boolean;
+  runtime?: NodeRuntime;
   isHover: boolean;
   isLocated: boolean;
   isSelected: boolean;
@@ -16,12 +18,16 @@ interface Props {
 }
 
 export default function NodeCard({
-  node, phase, scale, anim, isHover, isLocated, isSelected, onEnter, onLeave, onClick,
+  node, phase, scale, anim, runtime, isHover, isLocated, isSelected, onEnter, onLeave, onClick,
 }: Props) {
   const active = phase === "active";
   const done = phase === "done";
   const pending = phase === "pending";
   const ghost = phase === "ghost";
+
+  // Prefer real backend summary/elapsed when a `node` event has arrived for this card.
+  const conclusion = runtime?.summary?.trim() ? runtime.summary : node.conclusion;
+  const dur = runtime && runtime.elapsed > 0 ? `${runtime.elapsed.toFixed(1)}s` : node.dur;
 
   const dotColor = active ? node.ac : done ? COLORS.done : COLORS.ink3;
   const originX = node.x < CANVAS_W * 0.3 ? "left" : node.x > CANVAS_W * 0.66 ? "right" : "center";
@@ -73,7 +79,7 @@ export default function NodeCard({
           {node.label}
         </span>
         <span style={{ marginLeft: "auto", font: "500 11px 'JetBrains Mono',monospace", color: COLORS.ink3 }}>
-          {node.dur}
+          {dur}
         </span>
       </div>
       <div
@@ -85,7 +91,7 @@ export default function NodeCard({
         {node.agent}
       </div>
       <div style={{ font: "400 11.5px Inter,sans-serif", color: "#aab2bf", lineHeight: 1.36, marginBottom: 7 }}>
-        {node.conclusion}
+        {conclusion}
       </div>
 
       {node.bar && (

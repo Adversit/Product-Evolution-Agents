@@ -238,4 +238,6 @@ export interface SampleState {
   report_paths: string[];
 }
 
+// Embedded glm-5.1 replay snapshot — used as the labeled OFFLINE FALLBACK when the
+// live backend is unreachable. Primary source is /api/state via the live context.
 export const STATE = raw as unknown as SampleState;

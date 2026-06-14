@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Braces, Check, Copy, LayoutList, X } from "lucide-react";
 import { COLORS } from "../lib/theme";
 import { getInspector } from "./inspectors";
+import { useLive } from "../lib/live";
+import { STATE, type SampleState } from "../data/state";
 
 interface Props {
   nodeId: string;
@@ -13,7 +15,9 @@ type View = "structured" | "json";
 export default function NodeDrawer({ nodeId, onClose }: Props) {
   const [view, setView] = useState<View>("structured");
   const [copied, setCopied] = useState(false);
-  const inspector = useMemo(() => getInspector(nodeId), [nodeId]);
+  const { state } = useLive();
+  const data = (state as SampleState | null) ?? STATE;
+  const inspector = useMemo(() => getInspector(nodeId, data), [nodeId, data]);
   const json = useMemo(() => (inspector ? JSON.stringify(inspector.raw, null, 2) : ""), [inspector]);
 
   if (!inspector) return null;

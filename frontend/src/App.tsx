@@ -1,17 +1,30 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Stage from "./components/Stage";
 import NodeDrawer from "./components/NodeDrawer";
 import { usePipeline } from "./hooks/usePipeline";
+import { useLive } from "./lib/live";
 import { STEP_NAMES, TOTAL_STEPS } from "./lib/graph";
 import { COLORS } from "./lib/theme";
 
 export default function App() {
   const pipeline = usePipeline();
+  const live = useLive();
   const [hover, setHover] = useState<string | null>(null);
   const [located, setLocated] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+
+  const { syncTo } = pipeline;
+  const lastLiveStep = useRef<number | null>(null);
+
+  // Drive the DAG lighting from real backend `node` events when streaming.
+  useEffect(() => {
+    if (live.liveStep === null) return;
+    if (lastLiveStep.current === live.liveStep) return;
+    lastLiveStep.current = live.liveStep;
+    syncTo(live.liveStep);
+  }, [live.liveStep, syncTo]);
 
   const { step } = pipeline;
   const stepLabel = `${step + 1} / ${TOTAL_STEPS} · ${STEP_NAMES[step]}`;
@@ -34,6 +47,7 @@ export default function App() {
           hover={hover}
           located={located}
           selected={selected}
+          nodeRuntime={live.nodeRuntime}
           onHover={setHover}
           onSelect={(id) => setSelected((cur) => (cur === id ? null : id))}
         />

@@ -16,6 +16,9 @@ export interface Pipeline {
   reset: () => void;
   toggleAnim: () => void;
   cycleSpeed: () => void;
+  // Drive the DAG from an external (live backend) step. Stops the fake timer and
+  // jumps the lit node to `target`. Used when real `node` events arrive.
+  syncTo: (target: number) => void;
 }
 
 // Drives the node-by-node light-up simulation. Mirrors the DCLogic timer in the design,
@@ -80,6 +83,15 @@ export function usePipeline(initialStep = 11): Pipeline {
     setStep(0);
   }, [clear]);
 
+  const syncTo = useCallback(
+    (target: number) => {
+      clear();
+      setPlaying(false);
+      setStep(Math.max(0, Math.min(LAST, target)));
+    },
+    [clear],
+  );
+
   const toggleAnim = useCallback(() => setAnim((a) => !a), []);
 
   const cycleSpeed = useCallback(() => {
@@ -92,5 +104,5 @@ export function usePipeline(initialStep = 11): Pipeline {
 
   useEffect(() => clear, [clear]);
 
-  return { step, playing, anim, speed, togglePlay, step1, prev, reset, toggleAnim, cycleSpeed };
+  return { step, playing, anim, speed, togglePlay, step1, prev, reset, toggleAnim, cycleSpeed, syncTo };
 }
