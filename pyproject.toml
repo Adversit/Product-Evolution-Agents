@@ -19,9 +19,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+server = ["fastapi>=0.110", "uvicorn[standard]>=0.30"]
 
 [project.scripts]
 evopm = "evopm.cli:app"
+evopm-server = "evopm.server:main"
 
 [build-system]
 requires = ["hatchling"]
