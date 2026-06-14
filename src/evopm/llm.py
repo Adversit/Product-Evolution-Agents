@@ -33,8 +33,11 @@ DEFAULT_MODEL = "glm-5.1"
 REQUEST_TIMEOUT = 120  # 单次结构化请求超时（秒）
 WEB_SEARCH_TIMEOUT = 20  # web_search 超时（秒）
 BUDGET_LIMIT = 30  # 全局 LLM 真实调用上限
-_BACKOFF_DELAYS = (1, 4, 16)  # 429/5xx/网络超时指数退避（测试可 monkeypatch）
+_BACKOFF_DELAYS = (2, 6, 15, 40)  # 429/5xx/网络超时指数退避（测试可 monkeypatch）
 CACHE_DIR = Path("runs/.cache")
+# 兜底缓存：真实(mock/live)调用穷尽重试仍失败时，从这里找同 schema 的样本顶上，
+# 保证演示链路不硬崩（demo 取向：演示路径可靠 > 精确）。打包进仓库的 glm-5.1 全量答案。
+FALLBACK_CACHE_DIR = Path("tests/replay_cache_glm51")
 
 # GLM Coding Plan 有并发上限（突发并发 → 429 code 1302）。全局信号量把同时在飞的
 # 真实 LLM 请求限到 EVOPM_LLM_CONCURRENCY（默认 2），避免两个 research 节点 fan-out
@@ -66,18 +69,25 @@ class SearchResult(BaseModel):
 # 模块级状态：预算计数器 + run_mode
 # --------------------------------------------------------------------------- #
 _budget_used = 0
+_fallback_used = 0  # 真实调用失败后走缓存兜底的次数（仅供展示/诊断）
 _run_mode = "mock"  # "live" | "mock" | "replay"，CLI run 入口经 set_run_mode 注入
 
 
 def reset_budget() -> None:
-    """CLI run 入口调用，归零模块级预算计数器。"""
-    global _budget_used
+    """CLI run 入口调用，归零模块级预算 + 兜底计数器。"""
+    global _budget_used, _fallback_used
     _budget_used = 0
+    _fallback_used = 0
 
 
 def get_budget_used() -> int:
     """report 节点读取，写入 state.llm_call_count（仅供展示）。"""
     return _budget_used
+
+
+def get_fallback_used() -> int:
+    """本次运行真实调用失败、走缓存兜底的次数（演示诊断用）。"""
+    return _fallback_used
 
 
 def set_run_mode(mode: str) -> None:
@@ -199,11 +209,30 @@ def structured_call(
 
     _charge_budget()  # 真实调用计入预算（缓存命中已 return）
 
+    try:
+        parsed = _live_structured(schema, system, user, resolved)
+    except Exception as exc:  # 网络/限流/校验穷尽 → mock 兜底（replay 模式上方已 return/raise）
+        fb = _cache_fallback(schema)
+        if fb is not None:
+            _note_fallback(schema, exc)
+            return fb
+        raise LLMCallFailed(
+            f"结构化调用失败且无缓存兜底（schema={schema.__name__}）：{exc}"
+        ) from exc
+
+    if use_cache:
+        _write_cache(key, parsed)
+    return parsed
+
+
+def _live_structured(
+    schema: type[BaseModel], system: str, user: str, resolved: str
+) -> BaseModel:
+    """真实结构化调用：网络退避重试 + 校验失败重试 1 次；穷尽抛 LLMCallFailed。"""
     chat = get_chat(model=resolved)
     structured_llm = chat.with_structured_output(
         schema, method="function_calling", include_raw=True
     )
-
     user_msg = user
     last_err = ""
     for _ in range(2):  # 初次 + 校验失败重试 1 次
@@ -213,8 +242,6 @@ def structured_call(
         parsed = result.get("parsed")
         parsing_error = result.get("parsing_error")
         if parsed is not None and parsing_error is None:
-            if use_cache:
-                _write_cache(key, parsed)
             return parsed
         # 校验失败 / 无 tool call（纯文本）→ 附错误与原始输出重试
         raw = result.get("raw")
@@ -224,9 +251,33 @@ def structured_call(
             f"{user}\n\n[上一轮输出无法解析为目标结构，请严格按工具 schema 重新作答]\n"
             f"错误：{last_err}\n原始输出：{raw_text[:800]}"
         )
-
     raise LLMCallFailed(
         f"结构化调用穷尽重试仍失败（schema={schema.__name__}）：{last_err}"
+    )
+
+
+def _cache_fallback(schema: type[BaseModel]) -> BaseModel | None:
+    """从缓存目录找一条能通过 schema 校验的样本顶上（CACHE_DIR 优先，再打包 fixture）。"""
+    seen: list[Path] = []
+    for d in (CACHE_DIR, FALLBACK_CACHE_DIR):
+        if d in seen or not d.exists():
+            continue
+        seen.append(d)
+        for path in sorted(d.glob("*.json")):
+            try:
+                obj = json.loads(path.read_text(encoding="utf-8"))
+                return schema.model_validate(obj)
+            except Exception:
+                continue
+    return None
+
+
+def _note_fallback(schema: type[BaseModel], exc: Exception) -> None:
+    global _fallback_used
+    _fallback_used += 1
+    print(
+        f"[llm] 真实调用失败，走缓存兜底（{schema.__name__}）：{type(exc).__name__}",
+        flush=True,
     )
 
 

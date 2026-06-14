@@ -109,6 +109,26 @@ def test_budget_exceeded(monkeypatch):
         llm.structured_call(Tiny, "sys", "user-over", use_cache=False)
 
 
+def test_real_failure_falls_back_to_cache(monkeypatch, tmp_path):
+    # 真实调用穷尽重试仍失败（mock/live）→ 从缓存目录找同 schema 样本兜底，链路不崩。
+    cache = tmp_path / "cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    (cache / "x.json").write_text('{"value": "from-cache"}', encoding="utf-8")
+    _install(monkeypatch, [RuntimeError("429")] * 4)  # 每次 invoke 都网络失败
+    out = llm.structured_call(Tiny, "sys", "user", use_cache=False)
+    assert out.value == "from-cache"
+    assert llm.get_fallback_used() == 1
+
+
+def test_no_fallback_sample_still_raises(monkeypatch, tmp_path):
+    # 缓存目录无可校验样本时仍抛 LLMCallFailed（不静默返回脏数据）。
+    (tmp_path / "cache").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(llm, "FALLBACK_CACHE_DIR", tmp_path / "nope")
+    _install(monkeypatch, [RuntimeError("429")] * 4)
+    with pytest.raises(llm.LLMCallFailed):
+        llm.structured_call(Tiny, "sys", "user", use_cache=False)
+
+
 def test_temperature_zero_rejected():
     # 温度边界在 get_chat 最前面校验，先于 api key 检查
     with pytest.raises(ValueError):
