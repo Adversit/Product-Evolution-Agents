@@ -1,5 +1,7 @@
 # EvoPM Agent · 流水线透视台 (Pipeline Observatory)
 
+![EvoPM Pipeline Observatory](../docs/assets/observatory.gif)
+
 Dark-tech, real-time visualization of the 14-node LangGraph multi-agent pipeline
 (信号 → 过滤聚类 → 竞品/技术调研 → 质量门禁 → 机会评分 → 研发执行 → 对抗审查 → 人工介入 → 报告).
 
