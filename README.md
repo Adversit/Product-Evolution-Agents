@@ -25,7 +25,7 @@
 
 - [项目介绍](#项目介绍)
 - [核心设计原则](#核心设计原则)
-- [前端可视化 · 流水线透视台](#-前端可视化--流水线透视台)
+- [前端可视化（两套界面）](#-前端可视化两套界面)
 - [安装](#安装)
 - [使用](#使用)
 - [测试](#测试)
@@ -51,25 +51,40 @@ EvoPM Agent 是一个基于 LangGraph 的多智能体产品需求决策系统（
 - **证据闭包**：所有结论引用的 evidence id 都由代码校验必须指向真实上游对象，非法引用剔除并交对抗式审查。
 - **稳定运行兜底**：LLM 指数退避重试、结构化输出校验重试、磁盘缓存 + `--replay` 离线重放、外部依赖失败自动降级 mock。
 
-## 🖥 前端可视化 · 流水线透视台
+## 🖥 前端可视化（两套界面）
 
-`frontend/` 是一个 Vite + React + TS 应用，把后端这条 14 节点流水线**实时可视化**，用于现场演示多智能体执行过程并定位问题——酷炫但过程清晰、字段明文可读。
+仓库内含两套独立前端（均 Vite + React + TS），对应两种受众：
+
+### 决策工作台 · Decision Workbench（`frontend-product/`）
+
+给产品经理 / 团队 / 评委看**结论**的成品界面——浅色 Linear 风、6 屏左导航切换、接真实 glm-5.1 replay 数据。
+
+![EvoPM 决策工作台](docs/assets/workbench.png)
+
+- **焦点需求 HERO**：10 维质量雷达 + 总分 **61 → 86** 滚动、初评/终评切换、可点击的**证据弹层**（原文摘录 + 来源 + 强度，`mock://` 标本地材料）、Linear 列表式折叠详情模块。
+- **概览仪表盘**（决策漏斗 27→5→9→3→1）、**问题簇总览**（DUPLICATE 标记）、**机会评分 · 路线图**（Now/Next/Later）、**研发执行**（核心模块 ⚠ + 任务卡 + 风险）、**报告中心**（4 份精排阅读）。
+- **浅色 Linear 风**：白底 + 发丝灰线，紫色仅留数据序列，绿色仅作 PASS / 跃升语义。
+
+```bash
+cd frontend-product && npm install && npm run dev   # http://localhost:5174
+```
+
+### 流水线透视台 · Pipeline Observatory（`frontend/`）
+
+现场演示**多智能体执行过程**并定位问题——深色科技风、14 节点实时点亮，酷炫但过程清晰、字段明文可读。
 
 ![节点检视抽屉](docs/assets/observatory-drawer.png)
 
 - **14 节点蛇形 DAG**，接真实 glm-5.1 replay 数据：每个节点卡显示节点名 / agent / 一行结论 / 耗时 / 迷你指标（如 `quality_gate` 带 10 维分数条 R1 61 → R2 86）。
 - **条件分支与回环明示**：竞品 / 技术调研并行 fan-in 门禁、`needs_enrich → 重评` 回环、`pass` 直通机会评分，以及 `clarify` / `redo` / `more_evidence` 未触发的 ghost 路径（紫虚线）。
-- **播放模拟**：▶ / ⏸ / 单步 / 重置 / 倍速 / 动画开关，节点按执行顺序点亮，可随时暂停静读字段。
-- **计数侧栏 + 异常定位**：漏斗（27→24→3→1）、enrich/clarify/redo rounds、LLM 预算环，点击异常项可定位并高亮对应节点。
-- **节点检视抽屉**：点任意节点看结构化字段表（信号表 / 门禁维度条 / enrich 前后 diff / 机会加权 / 代码影响风险层 / Critic 发现 / HITL），并可 **结构化 ↔ 原始 JSON** 切换。
+- **播放模拟 + 计数侧栏 + 异常定位**：▶ / ⏸ / 单步 / 倍速、漏斗 / rounds / LLM 预算环，点击异常项定位并高亮节点。
+- **节点检视抽屉**：点任意节点看结构化字段表，并可 **结构化 ↔ 原始 JSON** 切换。
 
 ```bash
-cd frontend
-npm install
-npm run dev      # http://localhost:5173
+cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
-> 当前用静态 replay 数据，**尚未接后端实时数据**（断点交互面板、时间轴回看也待实现）。完成度对照与目标接口见 [`frontend/README.md`](frontend/README.md)。
+> 两套均用静态 replay 数据，**尚未接后端实时数据**。完成度与目标接口见各自 README（[`frontend-product/README.md`](frontend-product/README.md) · [`frontend/README.md`](frontend/README.md)）。
 
 ## 安装
 
